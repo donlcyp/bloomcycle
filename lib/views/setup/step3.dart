@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import '../home.dart';
 
 class SetupStep3 extends StatefulWidget {
-  const SetupStep3({Key? key}) : super(key: key);
+  const SetupStep3({super.key});
 
   @override
   State<SetupStep3> createState() => _SetupStep3State();
 }
 
 class _SetupStep3State extends State<SetupStep3> {
-  int _currentStep = 3;
+  final int _currentStep = 3;
 
   @override
   Widget build(BuildContext context) {

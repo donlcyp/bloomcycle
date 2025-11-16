@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../home.dart';
+import '../../calendar.dart';
 
 class NavBar extends StatefulWidget {
-  const NavBar({Key? key}) : super(key: key);
+  const NavBar({super.key});
 
   @override
   State<NavBar> createState() => _NavBarState();
@@ -61,22 +62,8 @@ class _NavBarState extends State<NavBar> {
 }
 
 // Placeholder pages
-class CalendarPage extends StatelessWidget {
-  const CalendarPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Calendar',
-        style: Theme.of(context).textTheme.headlineMedium,
-      ),
-    );
-  }
-}
-
 class InsightsPage extends StatelessWidget {
-  const InsightsPage({Key? key}) : super(key: key);
+  const InsightsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +77,7 @@ class InsightsPage extends StatelessWidget {
 }
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {

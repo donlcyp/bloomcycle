@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'step3.dart';
 
 class SetupStep2 extends StatefulWidget {
-  const SetupStep2({Key? key}) : super(key: key);
+  const SetupStep2({super.key});
 
   @override
   State<SetupStep2> createState() => _SetupStep2State();
@@ -10,8 +10,8 @@ class SetupStep2 extends StatefulWidget {
 
 class _SetupStep2State extends State<SetupStep2> {
   final _cycleStartController = TextEditingController();
-  int _currentStep = 2;
-  int _totalSteps = 3;
+  final int _currentStep = 2;
+  final int _totalSteps = 3;
 
   @override
   void dispose() {

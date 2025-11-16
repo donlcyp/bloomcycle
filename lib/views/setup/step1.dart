@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'step2.dart';
 
 class SetupStep1 extends StatefulWidget {
-  const SetupStep1({Key? key}) : super(key: key);
+  const SetupStep1({super.key});
 
   @override
   State<SetupStep1> createState() => _SetupStep1State();

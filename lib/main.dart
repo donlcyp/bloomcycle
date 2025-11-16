@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:BloomCycle/auth/login.dart';
-import 'package:BloomCycle/views/nav/nav.dart';
+import 'auth/login.dart';
+import 'views/nav/nav.dart';
 
 void main() {
   // Initialize Flutter binding

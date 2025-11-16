@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/home_data.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -31,11 +31,8 @@ class _HomePageState extends State<HomePage> {
             // Today's Insights Section
             _buildTodaysInsights(screenWidth, screenHeight),
             SizedBox(height: screenHeight * 0.03),
-            // Log Symptoms Section
-            _buildLogSymptoms(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
-            // Recent Activity Section
-            _buildRecentActivity(screenWidth, screenHeight),
+            // Today's Tip Section
+            _buildTodaysTip(screenWidth, screenHeight),
             SizedBox(height: screenHeight * 0.03),
             // Health Tips Section
             _buildHealthTips(screenWidth, screenHeight),
@@ -73,60 +70,141 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Text(
-            'Cycle cycle 34 days',
+            'Current cycle: ${data.totalCycleDays} days',
             style: TextStyle(
               fontSize: screenWidth > 600 ? 12 : 11,
               color: Colors.grey,
             ),
           ),
           SizedBox(height: screenHeight * 0.02),
-          // Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: data.cycleProgress,
-              minHeight: 8,
-              backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFFD946A6),
+          // Progress Bar with Timeline
+          Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: data.cycleProgress,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFFD946A6),
+                  ),
+                ),
               ),
-            ),
+              SizedBox(height: screenHeight * 0.015),
+              // Timeline labels
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Day 1',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    'Day ${data.currentDay} (Today)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  Text(
+                    'Day ${data.totalCycleDays}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           SizedBox(height: screenHeight * 0.02),
-          // Cycle Info Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildCycleInfoBox('${data.currentDay}', 'Current\nDay', Colors.red),
-              _buildCycleInfoBox('${data.daysLeft}', 'Days\nLeft', Colors.blue),
-              _buildCycleInfoBox(data.currentPhase, 'Current\nPhase', Colors.green),
-              Text(data.nextDate)
-            ],
+          // Cycle Info Boxes
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _buildCycleInfoBoxNew(
+                    '${data.currentDay}',
+                    'Current\nDay',
+                    const Color(0xFFFF6B6B),
+                    screenHeight,
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                Expanded(
+                  child: _buildCycleInfoBoxNew(
+                    '${data.daysLeft}',
+                    'Days to\nPeriod',
+                    const Color(0xFF4DABF7),
+                    screenHeight,
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                Expanded(
+                  child: _buildCycleInfoBoxNew(
+                    data.currentPhase,
+                    'Current\nPhase',
+                    const Color(0xFF51CF66),
+                    screenHeight,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCycleInfoBox(String title, String subtitle, Color color) {
+  Widget _buildCycleInfoBoxNew(
+    String title,
+    String subtitle,
+    Color color,
+    double screenHeight,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      height: 115,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             title,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: color,
+              height: 1.1,
             ),
           ),
+          const SizedBox(height: 6),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[700],
+              height: 1.2,
             ),
           ),
         ],
@@ -135,23 +213,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildQuickActions(double screenWidth, double screenHeight) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+    final actions = HomeData.quickActions;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: screenWidth * 0.02),
+          child: Text(
             'Quick Actions',
             style: TextStyle(
               fontSize: screenWidth > 600 ? 18 : 16,
@@ -159,51 +227,97 @@ class _HomePageState extends State<HomePage> {
               color: Colors.black,
             ),
           ),
-          SizedBox(height: screenHeight * 0.02),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildActionButton('Log Period', Icons.calendar_today),
-              _buildActionButton('Log Symptom', Icons.health_and_safety),
-              _buildActionButton('Log Mood', Icons.sentiment_satisfied),
-            ],
+        ),
+        SizedBox(height: screenHeight * 0.02),
+        ...actions.asMap().entries.map((entry) {
+          final action = entry.value;
+          final showPrediction = entry.key > 0; // Show prediction for Symptoms and Mood
+          return Padding(
+            padding: EdgeInsets.only(bottom: screenHeight * 0.015),
+            child: _buildActionCard(
+              action.title,
+              _getIconData(action.iconName),
+              Color(action.colorValue),
+              showPrediction,
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'description':
+        return Icons.description;
+      case 'favorite':
+        return Icons.favorite;
+      case 'emoji_emotions':
+        return Icons.emoji_emotions;
+      default:
+        return Icons.circle;
+    }
+  }
+
+  Widget _buildActionCard(
+    String title,
+    IconData icon,
+    Color color,
+    bool showPrediction,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          if (showPrediction) ...[
+            const SizedBox(width: 8),
+            Text(
+              '(prediction)',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          width: 50,
-          height: 50,
-          decoration: const BoxDecoration(
-            color: Color(0xFFD946A6),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.black,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildTodaysInsights(double screenWidth, double screenHeight) {
-    final insights = HomeData.insights;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -228,134 +342,63 @@ class _HomePageState extends State<HomePage> {
               color: Colors.black,
             ),
           ),
-          SizedBox(height: screenHeight * 0.02),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: insights.length,
-            itemBuilder: (context, index) {
-              final insight = insights[index];
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          SizedBox(height: screenHeight * 0.015),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFCE7F3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD946A6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.wb_sunny,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFD946A6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.lightbulb,
-                          color: Colors.white,
-                          size: 20,
+                      const Text(
+                        'Ovulation Phase Active',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                      SizedBox(width: screenWidth * 0.04),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              insight.title,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            Text(
-                              insight.description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Your fertility window is at its peak. Consider tracking basal body temperature for more accurate predictions.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
-                  if (index < insights.length - 1)
-                    SizedBox(height: screenHeight * 0.02),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLogSymptoms(double screenWidth, double screenHeight) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Log Symptoms',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.02),
-          Container(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'No symptoms logged',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-                Checkbox(
-                  value: false,
-                  onChanged: (value) {},
                 ),
               ],
             ),
           ),
-          SizedBox(height: screenHeight * 0.01),
-          Text(
-            'View All Symptoms',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFFD946A6),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentActivity(double screenWidth, double screenHeight) {
-    final activities = HomeData.recentActivities;
+  Widget _buildTodaysTip(double screenWidth, double screenHeight) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -373,53 +416,63 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Recent Activity',
+            'Today\'s Tip',
             style: TextStyle(
               fontSize: screenWidth > 600 ? 18 : 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          SizedBox(height: screenHeight * 0.02),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: activities.length,
-            itemBuilder: (context, index) {
-              return Column(
-                children: [
-                  Row(
+          SizedBox(height: screenHeight * 0.015),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFCE7F3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD946A6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.water_drop,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFD946A6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check_circle,
-                          color: Colors.white,
-                          size: 20,
+                      const Text(
+                        'Hydration Focus',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                      SizedBox(width: screenWidth * 0.04),
-                      Expanded(
-                        child: Text(
-                          activities[index],
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'During ovulation, increase your water intake to support cervical mucus production and overall reproductive health.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
-                  if (index < activities.length - 1)
-                    SizedBox(height: screenHeight * 0.01),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -427,8 +480,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHealthTips(double screenWidth, double screenHeight) {
-    final tips = HomeData.healthTips;
-    final tipColors = [Colors.pink, Colors.blue, Colors.green];
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -453,72 +504,83 @@ class _HomePageState extends State<HomePage> {
               color: Colors.black,
             ),
           ),
-          SizedBox(height: screenHeight * 0.02),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: tips.length,
-            itemBuilder: (context, index) {
-              return Column(
-                children: [
-                  _buildHealthTipItem(
-                    tips[index].title,
-                    tips[index].description,
-                    tipColors[index % tipColors.length],
-                  ),
-                  if (index < tips.length - 1)
-                    SizedBox(height: screenHeight * 0.01),
-                ],
-              );
-            },
+          SizedBox(height: screenHeight * 0.015),
+          _buildHealthTipCard(
+            'Ovulation Nutrition',
+            'Focus on antioxidant-rich foods like berries and leafy greens during your fertile window.',
+            Icons.restaurant,
+            const Color(0xFFFCE7F3),
+            const Color(0xFFD946A6),
+          ),
+          SizedBox(height: screenHeight * 0.015),
+          _buildHealthTipCard(
+            'Exercise Tip',
+            'Light cardio and yoga are perfect for your current cycle phase.',
+            Icons.fitness_center,
+            const Color(0xFFDBEAFE),
+            const Color(0xFF3B82F6),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHealthTipItem(String title, String description, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+  Widget _buildHealthTipCard(
+    String title,
+    String description,
+    IconData icon,
+    Color backgroundColor,
+    Color iconColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
-          child: const Icon(
-            Icons.info,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-              Text(
-                description,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey,
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    height: 1.4,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

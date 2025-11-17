@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'step3.dart';
 
-class SetupStep2 extends StatefulWidget {
-  const SetupStep2({super.key});
+class SetupStep4 extends StatefulWidget {
+  const SetupStep4({super.key});
 
   @override
-  State<SetupStep2> createState() => _SetupStep2State();
+  State<SetupStep4> createState() => _SetupStep4State();
 }
 
-class _SetupStep2State extends State<SetupStep2> {
-  final _cycleStartController = TextEditingController();
-  final int _currentStep = 2;
+class _SetupStep4State extends State<SetupStep4> {
+  final TextEditingController _weightController = TextEditingController();
+  String _selectedUnit = 'lbs';
 
   @override
   void dispose() {
-    _cycleStartController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -41,8 +40,7 @@ class _SetupStep2State extends State<SetupStep2> {
                   margin: EdgeInsets.only(bottom: isMediumScreen ? 20 : 30),
                   child: Column(
                     children: [
-                      // Logo
-                      // (Progress Indicators removed from here, will be added below subtitle)
+                      // Logo and Title first
                       Text(
                         'BloomCycle',
                         style: TextStyle(
@@ -53,7 +51,7 @@ class _SetupStep2State extends State<SetupStep2> {
                       ),
                       SizedBox(height: screenHeight * 0.01),
                       Text(
-                        'Track your cycle with confidence',
+                        'Track your health with confidence',
                         style: TextStyle(
                           fontSize: screenWidth > 600 ? 12 : 11,
                           color: Colors.grey,
@@ -88,7 +86,7 @@ class _SetupStep2State extends State<SetupStep2> {
                               color: const Color(0xFFD946A6),
                             ),
                           ),
-                          // Step 2 (Current)
+                          // Step 2 (Complete)
                           Container(
                             width: screenWidth * 0.12,
                             height: screenWidth * 0.12,
@@ -96,14 +94,11 @@ class _SetupStep2State extends State<SetupStep2> {
                               color: const Color(0xFFD946A6),
                               shape: BoxShape.circle,
                             ),
-                            child: Center(
-                              child: Text(
-                                '$_currentStep',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth > 600 ? 16 : 14,
-                                ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
                           ),
@@ -112,24 +107,22 @@ class _SetupStep2State extends State<SetupStep2> {
                             child: Container(
                               height: 2,
                               margin: const EdgeInsets.symmetric(horizontal: 4),
-                              color: Colors.grey[300],
+                              color: const Color(0xFFD946A6),
                             ),
                           ),
-                          // Step 3 (Incomplete)
+                          // Step 3 (Complete)
                           Container(
                             width: screenWidth * 0.12,
                             height: screenWidth * 0.12,
                             decoration: BoxDecoration(
-                              color: Colors.grey[300],
+                              color: const Color(0xFFD946A6),
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
-                              child: Text(
-                                '3',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              child: Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
                           ),
@@ -138,22 +131,22 @@ class _SetupStep2State extends State<SetupStep2> {
                             child: Container(
                               height: 2,
                               margin: const EdgeInsets.symmetric(horizontal: 4),
-                              color: Colors.grey[300],
+                              color: const Color(0xFFD946A6),
                             ),
                           ),
-                          // Step 4 (Incomplete)
+                          // Step 4 (Current)
                           Container(
                             width: screenWidth * 0.12,
                             height: screenWidth * 0.12,
                             decoration: BoxDecoration(
-                              color: Colors.grey[300],
+                              color: const Color(0xFFD946A6),
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
                               child: Text(
                                 '4',
                                 style: TextStyle(
-                                  color: Colors.grey,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -181,27 +174,48 @@ class _SetupStep2State extends State<SetupStep2> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Center Icon
+                      Center(
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD946A6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'BC',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       // Question Title
-                      Text(
-                        'When did your last cycle start?',
+                      const Text(
+                        'What is your current weight?',
                         style: TextStyle(
-                          fontSize: screenWidth > 600 ? 24 : 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Start the first day of your period',
+                      const Text(
+                        'This helps us provide personalized health insights',
                         style: TextStyle(
-                          fontSize: screenWidth > 600 ? 13 : 12,
+                          fontSize: 12,
                           color: Colors.grey,
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Last Cycle Start Date Label
                       const Text(
-                        'Last Cycle Start Date',
+                        'Current Weight',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -209,65 +223,88 @@ class _SetupStep2State extends State<SetupStep2> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Date Picker Field
-                      TextField(
-                        controller: _cycleStartController,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          hintText: 'Select cycle start date',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFD946A6),
-                              width: 2,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _weightController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(decimal: true),
+                              onChanged: (_) {
+                                setState(() {});
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Enter your weight',
+                                hintStyle: TextStyle(color: Colors.grey[400]),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                  ),
+                                ),
+                                focusedBorder: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                                  borderSide: BorderSide(
+                                    color: Color(0xFFD946A6),
+                                    width: 2,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
                             ),
                           ),
-                          suffixIcon: const Icon(
-                            Icons.calendar_today,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now().subtract(
-                              const Duration(days: 90),
+                          const SizedBox(width: 12),
+                          Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.grey[300]!,
+                              ),
                             ),
-                            lastDate: DateTime.now(),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              _cycleStartController.text =
-                                  '${picked.month}/${picked.day}/${picked.year}';
-                            });
-                          }
-                        },
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedUnit,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'lbs',
+                                    child: Text('lbs'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'kg',
+                                    child: Text('kg'),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedUnit = value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
-                      // Info Boxes
-                      // Box 1: Why we need this info
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: const Color(0xFFFFF3F6),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.grey[300]!,
+                            color: const Color(0xFFF8C4DA),
                           ),
                         ),
                         child: Row(
@@ -277,7 +314,7 @@ class _SetupStep2State extends State<SetupStep2> {
                               width: 24,
                               height: 24,
                               decoration: const BoxDecoration(
-                                color: Color(0xFFD946A6),
+                                color: Colors.black87,
                                 shape: BoxShape.circle,
                               ),
                               child: const Center(
@@ -289,11 +326,11 @@ class _SetupStep2State extends State<SetupStep2> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
+                            const Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Why we need this information',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -301,12 +338,12 @@ class _SetupStep2State extends State<SetupStep2> {
                                       color: Colors.black,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
-                                    'Understanding your cycle helps us give you personalized insights and predictions',
+                                    'Your weight data helps us provide personalized health recommendations, track trends, and offer insights about your wellness journey. All data is encrypted and private.',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.grey[600],
+                                      color: Colors.black87,
                                     ),
                                   ),
                                 ],
@@ -315,67 +352,27 @@ class _SetupStep2State extends State<SetupStep2> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Box 2: Helpful info
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.grey[300]!,
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Helpful tips coming soon'),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Show helpful tips',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFFD946A6),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFD946A6),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.lightbulb,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Helpful Tip',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'If you don\'t remember your exact date, just pick your best estimate. You can always update it later',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
-                      const SizedBox(height: 28),
-                      // Buttons Row
+                      const SizedBox(height: 24),
                       Row(
                         children: [
-                          // Back Button
                           Expanded(
                             child: SizedBox(
                               height: 48,
@@ -403,20 +400,17 @@ class _SetupStep2State extends State<SetupStep2> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // Continue Button
                           Expanded(
                             child: SizedBox(
                               height: 48,
                               child: ElevatedButton(
-                                onPressed: _cycleStartController.text.isEmpty
+                                onPressed: _weightController.text.isEmpty
                                     ? null
                                     : () {
-                                        // Navigate to step 3
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const SetupStep3(),
-                                          ),
+                                        Navigator.of(context)
+                                            .pushNamedAndRemoveUntil(
+                                          '/home',
+                                          (route) => false,
                                         );
                                       },
                                 style: ElevatedButton.styleFrom(
@@ -431,13 +425,32 @@ class _SetupStep2State extends State<SetupStep2> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Skipped to home'),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Skip for now',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFD946A6),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -450,3 +463,4 @@ class _SetupStep2State extends State<SetupStep2> {
     );
   }
 }
+

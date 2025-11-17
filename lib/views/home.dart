@@ -241,7 +241,7 @@ class _HomePageState extends State<HomePage> {
               showPrediction,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

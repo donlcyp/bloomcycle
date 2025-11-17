@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'step4.dart';
 
 class SetupStep3 extends StatefulWidget {
   const SetupStep3({super.key});
@@ -8,6 +9,7 @@ class SetupStep3 extends StatefulWidget {
 }
 
 class _SetupStep3State extends State<SetupStep3> {
+  final Set<String> _selectedGoals = <String>{};
   final int _currentStep = 3;
 
   @override
@@ -51,7 +53,7 @@ class _SetupStep3State extends State<SetupStep3> {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.02),
-                      // Progress Indicators (moved below)
+                      // Progress Indicators (1, 2, 3, 4)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -75,7 +77,7 @@ class _SetupStep3State extends State<SetupStep3> {
                           Expanded(
                             child: Container(
                               height: 2,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
                               color: const Color(0xFFD946A6),
                             ),
                           ),
@@ -99,7 +101,7 @@ class _SetupStep3State extends State<SetupStep3> {
                           Expanded(
                             child: Container(
                               height: 2,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
                               color: const Color(0xFFD946A6),
                             ),
                           ),
@@ -122,12 +124,38 @@ class _SetupStep3State extends State<SetupStep3> {
                               ),
                             ),
                           ),
+                          // Progress Line
+                          Expanded(
+                            child: Container(
+                              height: 2,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              color: Colors.grey[300],
+                            ),
+                          ),
+                          // Step 4 (Incomplete)
+                          Container(
+                            width: screenWidth * 0.12,
+                            height: screenWidth * 0.12,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '4',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                // White Card
+                // White Card - Health Goals
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -147,98 +175,84 @@ class _SetupStep3State extends State<SetupStep3> {
                       // Center Icon
                       Center(
                         child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD946A6),
+                          width: 72,
+                          height: 72,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD946A6),
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
                             child: Icon(
-                              Icons.location_on,
+                              Icons.access_time,
                               color: Colors.white,
-                              size: 40,
+                              size: 36,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
                       // Question Title
-                      Center(
+                      const Center(
                         child: Text(
-                          'Enable Location Access',
+                          'Set Your Health Goals',
                           style: TextStyle(
-                            fontSize: screenWidth > 600 ? 28 : 26,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Center(
+                      const Center(
                         child: Text(
-                          'Unlock the following features',
+                          'Choose what matters most to you so we can\nprovide personalized insights and\nrecommendations.',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: screenWidth > 600 ? 13 : 12,
+                            fontSize: 12,
                             color: Colors.grey,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Feature List
-                      // Privacy Protection
-                      _buildFeatureItem(
-                        icon: Icons.lock,
-                        title: 'Privacy Protection',
-                        description:
-                            'Your location data is encrypted and stored securely. No one but you can see your info',
+                      const SizedBox(height: 32),
+                      // Health Goals List
+                      _buildGoalOption(
+                        'Track menstrual cycle',
+                        'Monitor periods, ovulation, and symptoms',
                       ),
-                      const SizedBox(height: 12),
-                      // Recommended health recommendations
-                      _buildFeatureItem(
-                        icon: Icons.favorite,
-                        title: 'Recommended health recommendations',
-                        description:
-                            'Get insights based on your local climate and health risks',
+                      const SizedBox(height: 16),
+                      _buildGoalOption(
+                        'Fertility planning',
+                        'Optimize conception chances or prevent pregnancy',
                       ),
-                      const SizedBox(height: 12),
-                      // Local healthcare provider suggestions
-                      _buildFeatureItem(
-                        icon: Icons.local_hospital,
-                        title: 'Local healthcare provider suggestions',
-                        description:
-                            'Find nearby clinics and hospitals that may help you',
+                      const SizedBox(height: 16),
+                      _buildGoalOption(
+                        'Overall wellness',
+                        'Mood tracking, exercise, and nutrition insights',
                       ),
-                      const SizedBox(height: 12),
-                      // Climate-based cycle insights
-                      _buildFeatureItem(
-                        icon: Icons.cloud,
-                        title: 'Climate-based cycle insights',
-                        description:
-                            'Understand how weather patterns may affect your health',
+                      const SizedBox(height: 16),
+                      _buildGoalOption(
+                        'Symptom management',
+                        'Track and understand PMS, cramps, and more',
                       ),
-                      const SizedBox(height: 12),
-                      // Emergency services locator
-                      _buildFeatureItem(
-                        icon: Icons.emergency,
-                        title: 'Emergency services locator',
-                        description:
-                            'Quickly find nearby emergency services in your area',
-                      ),
-                      const SizedBox(height: 28),
-                      // Enable Location Access Button
+                      const SizedBox(height: 32),
+                      // Continue Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/home',
-                              (route) => false,
-                            );
-                          },
+                          onPressed: _selectedGoals.isEmpty
+                              ? null
+                              : () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SetupStep4(),
+                                    ),
+                                  );
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD946A6),
+                            disabledBackgroundColor: Colors.grey[300],
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -246,57 +260,29 @@ class _SetupStep3State extends State<SetupStep3> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.location_on,
+                              Icon(Icons.check_circle,
                                   color: Colors.white, size: 18),
                               SizedBox(width: 8),
                               Text(
-                                'Enable Location Access',
+                                'Continue',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Back Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: Colors.grey[300]!,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'Back',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       // Skip for now link
                       Center(
                         child: GestureDetector(
                           onTap: () {
-                            // Skip to home
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Skipped to home'),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SetupStep4(),
                               ),
                             );
                           },
@@ -321,54 +307,78 @@ class _SetupStep3State extends State<SetupStep3> {
     );
   }
 
-  Widget _buildFeatureItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-            color: Color(0xFFD946A6),
-            shape: BoxShape.circle,
+  Widget _buildGoalOption(String title, String description) {
+    final isSelected = _selectedGoals.contains(title);
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedGoals.remove(title);
+          } else {
+            _selectedGoals.add(title);
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFD946A6) : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
           ),
-          child: Center(
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 14,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFD946A6) : Colors.grey[400]!,
+                  width: 2,
+                ),
+                color: isSelected ? const Color(0xFFD946A6) : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Center(
+                      child: Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    )
+                  : null,
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

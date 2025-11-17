@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'models/calendar_data.dart';
+import '../models/calendar_data.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});

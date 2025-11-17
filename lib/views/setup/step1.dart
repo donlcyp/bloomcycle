@@ -22,7 +22,7 @@ class _SetupStep1State extends State<SetupStep1> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMediumScreen = screenHeight < 900;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
       body: Center(
@@ -35,121 +35,7 @@ class _SetupStep1State extends State<SetupStep1> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Header with Logo
-                Container(
-                  margin: EdgeInsets.only(bottom: isMediumScreen ? 20 : 30),
-                  child: Column(
-                    children: [
-                      // Logo at the top
-                      Image.asset(
-                        'assets/logo1.png',
-                        width: screenWidth * 0.16,
-                        height: screenWidth * 0.16,
-                        fit: BoxFit.contain,
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      // Title
-                      Text(
-                        'BloomCycle',
-                        style: TextStyle(
-                          fontSize: screenWidth > 600 ? 28 : 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.01),
-                      // Subtitle
-                      Text(
-                        'Track your cycle with confidence',
-                        style: TextStyle(
-                          fontSize: screenWidth > 600 ? 12 : 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      // Progress Indicators (1, 2, 3) below subtitle
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Step 1 (Current)
-                          Container(
-                            width: screenWidth * 0.12,
-                            height: screenWidth * 0.12,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD946A6),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '1',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth > 600 ? 16 : 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Line between 1 and 2
-                          Expanded(
-                            child: Container(
-                              height: 2,
-                              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                              color: Colors.grey[300],
-                            ),
-                          ),
-                          // Step 2
-                          Container(
-                            width: screenWidth * 0.12,
-                            height: screenWidth * 0.12,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '2',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth > 600 ? 16 : 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Line between 2 and 3
-                          Expanded(
-                            child: Container(
-                              height: 2,
-                              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                              color: Colors.grey[300],
-                            ),
-                          ),
-                          // Step 3
-                          Container(
-                            width: screenWidth * 0.12,
-                            height: screenWidth * 0.12,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '3',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth > 600 ? 16 : 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // White Card
+                // White Card with Header and Content
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -166,6 +52,146 @@ class _SetupStep1State extends State<SetupStep1> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header (Logo, Title, Subtitle, Progress)
+                      Center(
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              'assets/logo1.png',
+                              width: screenWidth * 0.16,
+                              height: screenWidth * 0.16,
+                              fit: BoxFit.contain,
+                            ),
+                            SizedBox(height: screenHeight * 0.02),
+                            Text(
+                              'BloomCycle',
+                              style: TextStyle(
+                                fontSize: screenWidth > 600 ? 28 : 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.01),
+                            Text(
+                              'Track your cycle with confidence',
+                              style: TextStyle(
+                                fontSize: screenWidth > 600 ? 12 : 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.02),
+                            // Progress Indicators (1, 2, 3, 4)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Step 1 (Current)
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFD946A6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      '1',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Line between 1 and 2
+                                Expanded(
+                                  child: Container(
+                                    height: 2,
+                                    margin: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.02,
+                                    ),
+                                    color: Colors.grey[300],
+                                  ),
+                                ),
+                                // Step 2
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      '2',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Line between 2 and 3
+                                Expanded(
+                                  child: Container(
+                                    height: 2,
+                                    margin: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.02,
+                                    ),
+                                    color: Colors.grey[300],
+                                  ),
+                                ),
+                                // Step 3
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      '3',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Line between 3 and 4
+                                Expanded(
+                                  child: Container(
+                                    height: 2,
+                                    margin: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.02,
+                                    ),
+                                    color: Colors.grey[300],
+                                  ),
+                                ),
+                                // Step 4
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      '4',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
                       // Question Title
                       const Text(
                         "What's your birth date?",
@@ -177,7 +203,7 @@ class _SetupStep1State extends State<SetupStep1> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'This helps us personalize your info',
+                        'This helps us provide personalized insights',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
@@ -270,7 +296,6 @@ class _SetupStep1State extends State<SetupStep1> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
                             ),
                           ),
                         ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'healthdata.dart';
 import 'settings.dart';
 import 'privacy.dart';
+import '../../auth/login.dart';
+import '../../state/user_state.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -10,7 +12,8 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
+class _ProfilePageState extends State<ProfilePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -37,10 +40,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFE91E63),
-                  Color(0xFFD946A6),
-                ],
+                colors: [Color(0xFFE91E63), Color(0xFFD946A6)],
               ),
             ),
             child: SafeArea(
@@ -53,7 +53,18 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            // Basic logout: clear in-memory user state and go to login
+                            UserState.dateOfBirth = null;
+                            UserState.weightKg = null;
+
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => const LoginPage(),
+                              ),
+                              (route) => false,
+                            );
+                          },
                           icon: const Icon(
                             Icons.settings,
                             color: Colors.white,
@@ -72,10 +83,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 3,
-                            ),
+                            border: Border.all(color: Colors.white, width: 3),
                           ),
                           child: const Center(
                             child: Text(
@@ -97,10 +105,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                             decoration: BoxDecoration(
                               color: Colors.grey[600],
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
                             child: const Icon(
                               Icons.camera_alt,
@@ -125,10 +130,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                     // Location
                     const Text(
                       'San Francisco, CA',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                     const SizedBox(height: 20),
                     // Member Info Row
@@ -287,10 +289,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
               ),
               GestureDetector(
                 onTap: () {

@@ -3,6 +3,7 @@ import '../home.dart';
 import '../calendar.dart';
 import '../profile/profile.dart';
 import '../../models/cycle_history.dart';
+import '../../state/user_state.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -65,6 +66,9 @@ class InsightsPage extends StatelessWidget {
     final avgCycle = CycleHistoryData.averageCycleLength;
     final avgPeriod = CycleHistoryData.averagePeriodLength;
     final cycles = CycleHistoryData.recentCycles;
+
+    final dob = UserState.dateOfBirth;
+    final weightKg = UserState.weightKg;
 
     int? minCycle;
     int? maxCycle;
@@ -132,6 +136,78 @@ class InsightsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Personal snapshot (optional)
+                      if (dob != null || weightKg != null) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE0F2FE),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Color(0xFF3B82F6),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Personal Snapshot',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    if (dob != null)
+                                      Text(
+                                        'Birth date: ${dob.year}-${dob.month.toString().padLeft(2, '0')}-${dob.day.toString().padLeft(2, '0')}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    if (weightKg != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          'Current weight: ${weightKg.toStringAsFixed(1)} kg',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       // Summary card
                       Container(
                         decoration: BoxDecoration(

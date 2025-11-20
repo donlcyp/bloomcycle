@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'step2.dart';
+import '../../state/user_state.dart';
 
 class SetupStep1 extends StatefulWidget {
   const SetupStep1({super.key});
@@ -204,10 +205,7 @@ class _SetupStep1State extends State<SetupStep1> {
                       const SizedBox(height: 8),
                       const Text(
                         'This helps us provide personalized insights',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 24),
                       // Date of Birth Label
@@ -276,6 +274,23 @@ class _SetupStep1State extends State<SetupStep1> {
                           onPressed: _dobController.text.isEmpty
                               ? null
                               : () {
+                                  // Store DOB in user state
+                                  try {
+                                    final parts = _dobController.text.split(
+                                      '/',
+                                    ); // M/D/YYYY
+                                    if (parts.length == 3) {
+                                      final month = int.parse(parts[0]);
+                                      final day = int.parse(parts[1]);
+                                      final year = int.parse(parts[2]);
+                                      UserState.dateOfBirth = DateTime(
+                                        year,
+                                        month,
+                                        day,
+                                      );
+                                    }
+                                  } catch (_) {}
+
                                   // Navigate to step 2
                                   Navigator.push(
                                     context,

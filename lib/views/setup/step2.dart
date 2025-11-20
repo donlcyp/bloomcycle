@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'step3.dart';
+import '../../models/cycle_history.dart';
 
 class SetupStep2 extends StatefulWidget {
   const SetupStep2({super.key});
@@ -23,7 +25,7 @@ class _SetupStep2State extends State<SetupStep2> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMediumScreen = screenHeight < 900;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
       body: Center(
@@ -266,9 +268,7 @@ class _SetupStep2State extends State<SetupStep2> {
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.grey[300]!,
-                          ),
+                          border: Border.all(color: Colors.grey[300]!),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,9 +322,7 @@ class _SetupStep2State extends State<SetupStep2> {
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.grey[300]!,
-                          ),
+                          border: Border.all(color: Colors.grey[300]!),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,9 +382,7 @@ class _SetupStep2State extends State<SetupStep2> {
                                   Navigator.pop(context);
                                 },
                                 style: OutlinedButton.styleFrom(
-                                  side: BorderSide(
-                                    color: Colors.grey[300]!,
-                                  ),
+                                  side: BorderSide(color: Colors.grey[300]!),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -411,11 +407,32 @@ class _SetupStep2State extends State<SetupStep2> {
                                 onPressed: _cycleStartController.text.isEmpty
                                     ? null
                                     : () {
-                                        // Navigate to step 3
+                                        try {
+                                          final parsedDate = DateFormat(
+                                            'M/d/yyyy',
+                                          ).parse(_cycleStartController.text);
+                                          if (CycleHistoryData
+                                              .recentCycles
+                                              .isNotEmpty) {
+                                            final first = CycleHistoryData
+                                                .recentCycles
+                                                .first;
+                                            CycleHistoryData.recentCycles[0] =
+                                                CycleHistoryEntry(
+                                                  startDate: parsedDate,
+                                                  cycleLengthDays:
+                                                      first.cycleLengthDays,
+                                                  periodLengthDays:
+                                                      first.periodLengthDays,
+                                                );
+                                          }
+                                        } catch (_) {}
+
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const SetupStep3(),
+                                            builder: (context) =>
+                                                const SetupStep3(),
                                           ),
                                         );
                                       },

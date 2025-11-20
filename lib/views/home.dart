@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/home_data.dart';
+import 'chat/health_chat.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,31 +15,44 @@ class _HomePageState extends State<HomePage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.08,
-          vertical: screenHeight * 0.02,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5E6E8),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.08,
+            vertical: screenHeight * 0.02,
+          ),
+          child: Column(
+            children: [
+              // Cycle Overview Section
+              _buildCycleOverview(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
+              // Quick Actions Section
+              _buildQuickActions(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
+              // Today's Insights Section
+              _buildTodaysInsights(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
+              // Today's Tip Section
+              _buildTodaysTip(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
+              // Health Tips Section
+              _buildHealthTips(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
+            ],
+          ),
         ),
-        child: Column(
-          children: [
-            // Cycle Overview Section
-            _buildCycleOverview(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
-            // Quick Actions Section
-            _buildQuickActions(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
-            // Today's Insights Section
-            _buildTodaysInsights(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
-            // Today's Tip Section
-            _buildTodaysTip(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
-            // Health Tips Section
-            _buildHealthTips(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
-          ],
-        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const HealthChatPage()),
+          );
+        },
+        backgroundColor: const Color(0xFFD946A6),
+        icon: const Icon(Icons.chat_bubble_outline),
+        label: const Text('Health tips'),
       ),
     );
   }
@@ -98,10 +112,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     'Day 1',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                   ),
                   Text(
                     'Day ${data.currentDay} (Today)',
@@ -113,10 +124,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Text(
                     'Day ${data.totalCycleDays}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -170,17 +178,11 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       height: 115,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1.5,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -231,7 +233,8 @@ class _HomePageState extends State<HomePage> {
         SizedBox(height: screenHeight * 0.02),
         ...actions.asMap().entries.map((entry) {
           final action = entry.value;
-          final showPrediction = entry.key > 0; // Show prediction for Symptoms and Mood
+          final showPrediction =
+              entry.key > 0; // Show prediction for Symptoms and Mood
           return Padding(
             padding: EdgeInsets.only(bottom: screenHeight * 0.015),
             child: _buildActionCard(
@@ -283,15 +286,8 @@ class _HomePageState extends State<HomePage> {
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
           Text(
@@ -306,10 +302,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(width: 8),
             Text(
               '(prediction)',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
         ],
@@ -544,15 +537,8 @@ class _HomePageState extends State<HomePage> {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: iconColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
+            decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(

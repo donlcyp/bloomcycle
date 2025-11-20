@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../state/user_state.dart';
 
 class SetupStep4 extends StatefulWidget {
   const SetupStep4({super.key});
@@ -22,7 +23,7 @@ class _SetupStep4State extends State<SetupStep4> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMediumScreen = screenHeight < 900;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
       body: Center(
@@ -208,10 +209,7 @@ class _SetupStep4State extends State<SetupStep4> {
                       const SizedBox(height: 8),
                       const Text(
                         'This helps us provide personalized health insights',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 24),
                       const Text(
@@ -229,7 +227,9 @@ class _SetupStep4State extends State<SetupStep4> {
                             child: TextField(
                               controller: _weightController,
                               keyboardType:
-                                  const TextInputType.numberWithOptions(decimal: true),
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               onChanged: (_) {
                                 setState(() {});
                               },
@@ -249,7 +249,9 @@ class _SetupStep4State extends State<SetupStep4> {
                                   ),
                                 ),
                                 focusedBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(8),
+                                  ),
                                   borderSide: BorderSide(
                                     color: Color(0xFFD946A6),
                                     width: 2,
@@ -268,9 +270,7 @@ class _SetupStep4State extends State<SetupStep4> {
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.grey[300]!,
-                              ),
+                              border: Border.all(color: Colors.grey[300]!),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
@@ -303,9 +303,7 @@ class _SetupStep4State extends State<SetupStep4> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3F6),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xFFF8C4DA),
-                          ),
+                          border: Border.all(color: const Color(0xFFF8C4DA)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,9 +379,7 @@ class _SetupStep4State extends State<SetupStep4> {
                                   Navigator.pop(context);
                                 },
                                 style: OutlinedButton.styleFrom(
-                                  side: BorderSide(
-                                    color: Colors.grey[300]!,
-                                  ),
+                                  side: BorderSide(color: Colors.grey[300]!),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -407,8 +403,24 @@ class _SetupStep4State extends State<SetupStep4> {
                                 onPressed: _weightController.text.isEmpty
                                     ? null
                                     : () {
-                                        Navigator.of(context)
-                                            .pushNamedAndRemoveUntil(
+                                        // Store weight in user state
+                                        try {
+                                          final raw = _weightController.text
+                                              .trim();
+                                          final value = double.parse(raw);
+                                          double kg;
+                                          if (_selectedUnit == 'kg') {
+                                            kg = value;
+                                          } else {
+                                            // lbs to kg
+                                            kg = value * 0.45359237;
+                                          }
+                                          UserState.weightKg = kg;
+                                        } catch (_) {}
+
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamedAndRemoveUntil(
                                           '/home',
                                           (route) => false,
                                         );
@@ -437,9 +449,7 @@ class _SetupStep4State extends State<SetupStep4> {
                         child: GestureDetector(
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Skipped to home'),
-                              ),
+                              const SnackBar(content: Text('Skipped to home')),
                             );
                           },
                           child: const Text(
@@ -463,4 +473,3 @@ class _SetupStep4State extends State<SetupStep4> {
     );
   }
 }
-

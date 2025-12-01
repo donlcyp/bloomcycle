@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../home.dart';
 import '../calendar.dart';
 import '../profile/profile.dart';
+import '../chat/health_chat.dart';
 import '../../models/cycle_history.dart';
 import '../../state/user_state.dart';
 
@@ -19,6 +20,7 @@ class _NavBarState extends State<NavBar> {
     const HomePage(),
     const CalendarPage(),
     const InsightsPage(),
+    const HealthChatPage(),
     const ProfilePage(),
   ];
 
@@ -33,26 +35,38 @@ class _NavBarState extends State<NavBar> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Insights',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFFD946A6),
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        elevation: 8,
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(18),
+          topRight: Radius.circular(18),
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              label: 'Calendar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart),
+              label: 'Insights',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline),
+              label: 'Chat',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: const Color(0xFFD946A6),
+          unselectedItemColor: Colors.grey,
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          elevation: 8,
+          selectedFontSize: 12,
+          unselectedFontSize: 11,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
@@ -122,6 +136,11 @@ class InsightsPage extends StatelessWidget {
                   const Text(
                     'A quick look at your recent cycle history.',
                     style: TextStyle(fontSize: 13, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'These patterns are educational only and not medical advice.',
+                    style: TextStyle(fontSize: 11, color: Colors.white70),
                   ),
                 ],
               ),
@@ -329,9 +348,25 @@ class InsightsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       if (cycles.isEmpty)
-                        const Text(
-                          'No cycle history available yet.',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Icon(
+                              Icons.info_outline,
+                              size: 18,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'No cycle history available yet. Log your periods in the Calendar to see insights here.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
                         )
                       else
                         Column(
@@ -353,24 +388,42 @@ class InsightsPage extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Cycle starting ${_formatDate(cycle.startDate)}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Cycle starting ${_formatDate(cycle.startDate)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFCE7F3),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${cycle.cycleLengthDays} days',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFFD946A6),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Cycle length: ${cycle.cycleLengthDays} days',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Period length: ${cycle.periodLengthDays} days',
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: Colors.black87,
@@ -427,12 +480,25 @@ class InsightsPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 10),
                             if (minCycle == null || maxCycle == null)
-                              const Text(
-                                'We\'ll show patterns here once you have more cycle history.',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black87,
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Icon(
+                                    Icons.hourglass_empty,
+                                    size: 18,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'We\'ll show patterns here once you have more cycle history. Keep logging your cycles to see trends over time.',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               )
                             else if (minCycle == maxCycle)
                               Text(

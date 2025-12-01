@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/calendar_data.dart';
+import 'logs/symptoms_log.dart';
+import 'logs/notes_log.dart';
+import 'logs/notes_history.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -11,6 +14,116 @@ class CalendarPage extends StatefulWidget {
 
 class _CalendarPageState extends State<CalendarPage> {
   DateTime currentMonth = CalendarData.currentMonth;
+  DateTime? cycleStartDate;
+
+  void _markTodayAsCycleStart() {
+    final now = DateTime.now();
+    setState(() {
+      cycleStartDate = DateTime(now.year, now.month, now.day);
+    });
+  }
+
+  void _openDayDetailsBottomSheet(
+    DateTime date,
+    CalendarDay calendarDay,
+    bool isCycleStart,
+  ) {
+    final existingNote = CalendarData.getNoteForDate(date);
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DateFormat('EEEE, MMM d').format(date),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                calendarDay.isToday
+                    ? 'Today'
+                    : 'Tap an option below to log details for this day.',
+                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 16),
+              if (isCycleStart)
+                const Text(
+                  'Marked as start of your menstrual cycle.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              if (calendarDay.isPeriodDay)
+                const Text(
+                  'This day is in a logged period.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              if (calendarDay.isFertileWindow)
+                const Text(
+                  'This day is in your fertile window.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              if (calendarDay.hasOvulation)
+                const Text(
+                  'Ovulation indicator present.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              if (existingNote != null && existingNote.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Your note for this day:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  existingNote,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                ),
+                const SizedBox(height: 16),
+              ],
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ActionChip(
+                    label: const Text('Log symptoms'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(this.context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SymptomsLogPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Add note'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(this.context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const NotesLogPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   void _previousMonth() {
     setState(() {
@@ -58,15 +171,34 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildHeader() {
-    return const Center(
-      child: Text(
-        'Calendar',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Calendar',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
-      ),
+        TextButton.icon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const NotesHistoryPage()),
+            );
+          },
+          icon: const Icon(Icons.notes, size: 18, color: Color(0xFFEC4899)),
+          label: const Text(
+            'Notes',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFFEC4899),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -108,23 +240,34 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Color(0xFFEC4899)),
+              tooltip: 'Mark today as start of menstrual cycle',
+              onPressed: _markTodayAsCycleStart,
+            ),
+          ),
           SizedBox(height: screenHeight * 0.02),
           // Week days header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: CalendarData.weekDays
-                .map((day) => SizedBox(
-                      width: 40,
-                      child: Text(
-                        day,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
-                        ),
+                .map(
+                  (day) => SizedBox(
+                    width: 40,
+                    child: Text(
+                      day,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           SizedBox(height: screenHeight * 0.015),
@@ -149,17 +292,29 @@ class _CalendarPageState extends State<CalendarPage> {
 
     // Add actual days
     for (var calendarDay in calendarDays) {
-      dayWidgets.add(_buildDayCell(calendarDay));
+      final date = DateTime(
+        currentMonth.year,
+        currentMonth.month,
+        calendarDay.day,
+      );
+      final isCycleStart =
+          cycleStartDate != null &&
+          date.year == cycleStartDate!.year &&
+          date.month == cycleStartDate!.month &&
+          date.day == cycleStartDate!.day;
+      dayWidgets.add(
+        GestureDetector(
+          onTap: () =>
+              _openDayDetailsBottomSheet(date, calendarDay, isCycleStart),
+          child: _buildDayCell(calendarDay, isCycleStart),
+        ),
+      );
     }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: dayWidgets,
-    );
+    return Wrap(spacing: 8, runSpacing: 8, children: dayWidgets);
   }
 
-  Widget _buildDayCell(CalendarDay calendarDay) {
+  Widget _buildDayCell(CalendarDay calendarDay, bool isCycleStart) {
     Color? backgroundColor;
     Color? borderColor;
     Color textColor = Colors.black;
@@ -192,12 +347,26 @@ class _CalendarPageState extends State<CalendarPage> {
               '${calendarDay.day}',
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: calendarDay.isToday ? FontWeight.bold : FontWeight.normal,
+                fontWeight: calendarDay.isToday
+                    ? FontWeight.bold
+                    : FontWeight.normal,
                 color: textColor,
               ),
             ),
           ),
         ),
+        if (isCycleStart)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Icon(
+              Icons.close,
+              size: 14,
+              color: calendarDay.isToday
+                  ? Colors.white
+                  : const Color(0xFFEC4899),
+            ),
+          ),
         // Ovulation indicator (top-right dot)
         if (calendarDay.hasOvulation)
           Positioned(
@@ -278,12 +447,61 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ),
           SizedBox(height: screenHeight * 0.02),
-          ...legendItems.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+          ...legendItems.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _showLegendExplanation(item),
                 child: _buildLegendItem(item),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  void _showLegendExplanation(LegendItem item) {
+    String message;
+    switch (item.type) {
+      case LegendType.periodDays:
+        message =
+            'Days highlighted as period days are based on your logged bleeding.';
+        break;
+      case LegendType.fertileWindow:
+        message =
+            'The fertile window is an estimate based on recent cycle patterns.';
+        break;
+      case LegendType.today:
+        message =
+            'Today is highlighted so you can quickly log symptoms or notes.';
+        break;
+      case LegendType.ovulation:
+        message = 'Ovulation indicators mark the estimated day of ovulation.';
+        break;
+      case LegendType.symptomsLogged:
+        message = 'A pink dot shows that you logged symptoms on that day.';
+        break;
+      case LegendType.notesAdded:
+        message = 'A black dot shows that you added notes on that day.';
+        break;
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(item.label),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -376,10 +594,7 @@ class _CalendarPageState extends State<CalendarPage> {
         const SizedBox(width: 12),
         Text(
           item.label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[700],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
         ),
       ],
     );

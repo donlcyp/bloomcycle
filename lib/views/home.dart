@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/home_data.dart';
 import 'chat/health_chat.dart';
+import 'logs/symptoms_log.dart';
+import 'logs/mood_log.dart';
+import 'logs/notes_log.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -235,6 +238,44 @@ class _HomePageState extends State<HomePage> {
           final action = entry.value;
           final showPrediction =
               entry.key > 0; // Show prediction for Symptoms and Mood
+          VoidCallback onTap;
+          final titleLower = action.title.toLowerCase();
+          if (titleLower.contains('period')) {
+            onTap = () {
+              // In a full app, you might navigate to the Calendar tab here.
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Open Calendar to log today\'s period.'),
+                ),
+              );
+            };
+          } else if (titleLower.contains('symptom')) {
+            onTap = () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SymptomsLogPage(),
+                ),
+              );
+            };
+          } else if (titleLower.contains('mood')) {
+            onTap = () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const MoodLogPage()),
+              );
+            };
+          } else if (titleLower.contains('note')) {
+            onTap = () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const NotesLogPage()),
+              );
+            };
+          } else {
+            onTap = () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Action: ${action.title}')),
+              );
+            };
+          }
           return Padding(
             padding: EdgeInsets.only(bottom: screenHeight * 0.015),
             child: _buildActionCard(
@@ -242,6 +283,7 @@ class _HomePageState extends State<HomePage> {
               _getIconData(action.iconName),
               Color(action.colorValue),
               showPrediction,
+              onTap,
             ),
           );
         }),
@@ -267,45 +309,55 @@ class _HomePageState extends State<HomePage> {
     IconData icon,
     Color color,
     bool showPrediction,
+    VoidCallback onTap,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              if (showPrediction) ...[
+                const SizedBox(width: 8),
+                Text(
+                  '(prediction)',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                ),
+              ],
+            ],
           ),
-          const SizedBox(width: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-          if (showPrediction) ...[
-            const SizedBox(width: 8),
-            Text(
-              '(prediction)',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

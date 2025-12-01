@@ -20,10 +20,19 @@ class _HealthChatPageState extends State<HealthChatPage> {
 
   final TextEditingController _controller = TextEditingController();
   bool _sending = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _showSuggestions = true;
+
+  static const List<String> _suggestedPrompts = <String>[
+    'What is a normal menstrual cycle length?',
+    'How can I ease period cramps?',
+    'What is PMS and how can I manage it?',
+  ];
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -35,7 +44,10 @@ class _HealthChatPageState extends State<HealthChatPage> {
       _messages.add(_ChatMessage(sender: ChatSender.user, text: text));
       _controller.clear();
       _sending = true;
+      _showSuggestions = false;
     });
+
+    _scrollToBottom();
 
     // Simulated safe response. Later you can replace this with a real API call.
     final reply = _generateSafeReply(text);
@@ -46,6 +58,20 @@ class _HealthChatPageState extends State<HealthChatPage> {
     setState(() {
       _messages.add(_ChatMessage(sender: ChatSender.bot, text: reply));
       _sending = false;
+    });
+
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -79,56 +105,125 @@ class _HealthChatPageState extends State<HealthChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    const backgroundColor = Color(0xFFF5E6E8);
+    const botBubbleColor = Colors.white;
+    const userBubbleColor = Color(0xFFD946A6);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFD946A6),
         foregroundColor: Colors.white,
-        title: const Text('Health Tips Chat'),
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFCE7F3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.local_florist,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bloom',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'Cycle education assistant (not medical advice)',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      backgroundColor: const Color(0xFFF5E6E8),
+      backgroundColor: backgroundColor,
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              itemCount: _messages.length + (_sending ? 1 : 0),
               itemBuilder: (context, index) {
+                if (_sending && index == _messages.length) {
+                  // Typing indicator from Bloom
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildTypingIndicator(context),
+                  );
+                }
+
                 final msg = _messages[index];
                 final isUser = msg.sender == ChatSender.user;
-                return Align(
-                  alignment: isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isUser ? const Color(0xFFD946A6) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.75,
-                      ),
-                      child: Text(
-                        msg.text,
-                        style: TextStyle(
-                          color: isUser ? Colors.white : Colors.black87,
-                          fontSize: 14,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: isUser
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.start,
+                    children: [
+                      if (!isUser) ...[
+                        _buildAvatar(isUser: false),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isUser ? userBubbleColor : botBubbleColor,
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(18),
+                              topRight: const Radius.circular(18),
+                              bottomLeft: Radius.circular(isUser ? 18 : 4),
+                              bottomRight: Radius.circular(isUser ? 4 : 18),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            msg.text,
+                            style: TextStyle(
+                              color: isUser ? Colors.white : Colors.black87,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      if (isUser) ...[
+                        const SizedBox(width: 8),
+                        _buildAvatar(isUser: true),
+                      ],
+                    ],
                   ),
                 );
               },
             ),
           ),
+          if (_showSuggestions) _buildSuggestionsBar(context),
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
             child: Row(
               children: [
                 Expanded(
@@ -139,27 +234,141 @@ class _HealthChatPageState extends State<HealthChatPage> {
                     decoration: const InputDecoration(
                       hintText: 'Ask a general health or cycle question...',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                        borderRadius: BorderRadius.all(Radius.circular(24)),
                       ),
                       contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        horizontal: 14,
+                        vertical: 10,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _sending ? null : _handleSend,
-                  icon: Icon(
-                    Icons.send,
-                    color: _sending ? Colors.grey : const Color(0xFFD946A6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _sending
+                        ? Colors.grey.shade300
+                        : const Color(0xFFD946A6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    onPressed: _sending ? null : _handleSend,
+                    icon: Icon(
+                      Icons.send,
+                      color: _sending ? Colors.grey : Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar({required bool isUser}) {
+    if (isUser) {
+      return Container(
+        width: 28,
+        height: 28,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE0F2FE),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.person, color: Color(0xFF3B82F6), size: 18),
+      );
+    }
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: const BoxDecoration(
+        color: Color(0xFFFCE7F3),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(
+        Icons.local_florist,
+        color: Color(0xFFD946A6),
+        size: 18,
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        _buildAvatar(isUser: false),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(4),
+              bottomRight: Radius.circular(18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDot(),
+              const SizedBox(width: 4),
+              _buildDot(delay: 120),
+              const SizedBox(width: 4),
+              _buildDot(delay: 240),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDot({int delay = 0}) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade500,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsBar(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: const Color(0xFFFDECF4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _suggestedPrompts.map((prompt) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ActionChip(
+                backgroundColor: Colors.white,
+                label: Text(prompt, style: const TextStyle(fontSize: 12)),
+                onPressed: _sending
+                    ? null
+                    : () {
+                        _controller.text = prompt;
+                        _handleSend();
+                      },
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

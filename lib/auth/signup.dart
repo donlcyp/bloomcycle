@@ -17,6 +17,7 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  bool _isCreatingAccount = false;
 
   @override
   void dispose() {
@@ -33,7 +34,7 @@ class _SignupPageState extends State<SignupPage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMediumScreen = screenHeight < 900;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
       body: Center(
@@ -105,10 +106,7 @@ class _SignupPageState extends State<SignupPage> {
                       const SizedBox(height: 8),
                       const Text(
                         'Join thousands of women taking control of their health',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 20),
                       // First Name
@@ -277,10 +275,7 @@ class _SignupPageState extends State<SignupPage> {
                       const SizedBox(height: 4),
                       const Text(
                         'Must be at least 8 characters long',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
                       ),
                       const SizedBox(height: 12),
                       // Confirm Password
@@ -396,29 +391,87 @@ class _SignupPageState extends State<SignupPage> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: () {
-                            // Navigate to setup step 1
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SetupStep1(),
-                              ),
-                            );
-                          },
+                          onPressed: _isCreatingAccount
+                              ? null
+                              : () async {
+                                  if (_firstNameController.text.isEmpty ||
+                                      _emailController.text.isEmpty ||
+                                      _passwordController.text.isEmpty ||
+                                      _confirmPasswordController.text.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please fill in all required fields.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (_passwordController.text !=
+                                      _confirmPasswordController.text) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Passwords do not match.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (!_agreeToTerms) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please agree to the terms to continue.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    _isCreatingAccount = true;
+                                  });
+
+                                  await Future.delayed(
+                                    const Duration(milliseconds: 700),
+                                  );
+
+                                  if (!mounted) return;
+
+                                  // Navigate to setup step 1
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SetupStep1(),
+                                    ),
+                                  );
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD946A6),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: _isCreatingAccount
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Create Account',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -459,9 +512,7 @@ class _SignupPageState extends State<SignupPage> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.grey[300]!,
-                              ),
+                              border: Border.all(color: Colors.grey[300]!),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Material(

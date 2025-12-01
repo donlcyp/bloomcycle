@@ -291,6 +291,12 @@ class _SetupStep1State extends State<SetupStep1> {
                                     }
                                   } catch (_) {}
 
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Birth date saved.'),
+                                    ),
+                                  );
+
                                   // Navigate to step 2
                                   Navigator.push(
                                     context,

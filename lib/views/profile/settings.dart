@@ -125,38 +125,25 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildToggleItem(
-          'Dark Mode',
-          'Switch to dark theme',
-          _darkMode,
-          (value) {
-            setState(() {
-              _darkMode = value;
-            });
-          },
-        ),
+        _buildToggleItem('Dark Mode', 'Switch to dark theme', _darkMode, (
+          value,
+        ) {
+          setState(() {
+            _darkMode = value;
+          });
+        }),
         const SizedBox(height: 20),
-        _buildDropdownItem(
-          'Language',
-          _selectedLanguage,
-          _languages,
-          (value) {
-            setState(() {
-              _selectedLanguage = value!;
-            });
-          },
-        ),
+        _buildDropdownItem('Language', _selectedLanguage, _languages, (value) {
+          setState(() {
+            _selectedLanguage = value!;
+          });
+        }),
         const SizedBox(height: 20),
-        _buildDropdownItem(
-          'Time Zone',
-          _selectedTimeZone,
-          _timeZones,
-          (value) {
-            setState(() {
-              _selectedTimeZone = value!;
-            });
-          },
-        ),
+        _buildDropdownItem('Time Zone', _selectedTimeZone, _timeZones, (value) {
+          setState(() {
+            _selectedTimeZone = value!;
+          });
+        }),
       ],
     );
   }
@@ -191,10 +178,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -242,14 +226,8 @@ class _SettingsPageState extends State<SettingsPage> {
             child: DropdownButton<String>(
               value: selectedValue,
               onChanged: onChanged,
-              icon: const Icon(
-                Icons.keyboard_arrow_down,
-                color: Colors.grey,
-              ),
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
               items: options.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,

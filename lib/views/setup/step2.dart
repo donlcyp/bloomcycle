@@ -428,6 +428,16 @@ class _SetupStep2State extends State<SetupStep2> {
                                           }
                                         } catch (_) {}
 
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Cycle start date saved.',
+                                            ),
+                                          ),
+                                        );
+
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(

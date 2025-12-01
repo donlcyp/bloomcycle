@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/calendar_data.dart';
-import 'logs/symptoms_log.dart';
-import 'logs/notes_log.dart';
-import 'logs/notes_history.dart';
+import '../../models/calendar_data.dart';
+import '../logs/symptoms_log.dart';
+import '../logs/notes_log.dart';
+import '../logs/notes_history.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});

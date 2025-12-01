@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/home_data.dart';
-import 'chat/health_chat.dart';
-import 'logs/symptoms_log.dart';
-import 'logs/mood_log.dart';
-import 'logs/notes_log.dart';
+import '../../models/home_data.dart';
+import '../chat/health_chat.dart';
+import '../logs/symptoms_log.dart';
+import '../logs/mood_log.dart';
+import '../logs/notes_log.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../home.dart';
-import '../calendar.dart';
+import '../home/home.dart';
+import '../calendar/calendar.dart';
 import '../profile/profile.dart';
 import '../chat/health_chat.dart';
 import '../../models/cycle_history.dart';

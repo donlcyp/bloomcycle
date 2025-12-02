@@ -35,8 +35,14 @@ enum LegendType {
 }
 
 class CalendarData {
-  static DateTime currentMonth = DateTime(2025, 11);
-  static int todayDate = 16;
+  static DateTime get currentMonth {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+
+  static int get todayDate {
+    return DateTime.now().day;
+  }
 
   // In-memory logs for the current session (not persisted)
   static final Map<String, bool> _symptomLogs = <String, bool>{};

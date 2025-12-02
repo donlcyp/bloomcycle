@@ -13,8 +13,14 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  DateTime currentMonth = CalendarData.currentMonth;
+  late DateTime currentMonth;
   DateTime? cycleStartDate;
+
+  @override
+  void initState() {
+    super.initState();
+    currentMonth = DateTime.now();
+  }
 
   void _markTodayAsCycleStart() {
     final now = DateTime.now();
@@ -171,34 +177,78 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Calendar',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    final screenWidth = MediaQuery.of(context).size.width;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-        TextButton.icon(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const NotesHistoryPage()),
-            );
-          },
-          icon: const Icon(Icons.notes, size: 18, color: Color(0xFFEC4899)),
-          label: const Text(
-            'Notes',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFFEC4899),
-              fontWeight: FontWeight.w500,
-            ),
+        ],
+      ),
+      padding: EdgeInsets.all(screenWidth * 0.05),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Calendar',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                'Manage your cycle events',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const NotesHistoryPage()),
+                  );
+                },
+                icon: const Icon(Icons.notes, size: 18, color: Color(0xFFEC4899)),
+                label: const Text(
+                  'Notes',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFEC4899),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFD946A6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.calendar_today,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

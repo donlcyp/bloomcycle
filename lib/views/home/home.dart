@@ -28,6 +28,9 @@ class _HomePageState extends State<HomePage> {
           ),
           child: Column(
             children: [
+              // Header Section
+              _buildHeader(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
               // Cycle Overview Section
               _buildCycleOverview(screenWidth, screenHeight),
               SizedBox(height: screenHeight * 0.03),
@@ -56,6 +59,61 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFFD946A6),
         icon: const Icon(Icons.chat_bubble_outline),
         label: const Text('Health tips'),
+      ),
+    );
+  }
+
+  Widget _buildHeader(double screenWidth, double screenHeight) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(screenWidth * 0.05),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome Back',
+                style: TextStyle(
+                  fontSize: screenWidth > 600 ? 24 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                'Track your cycle with ease',
+                style: TextStyle(
+                  fontSize: screenWidth > 600 ? 12 : 11,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              color: Color(0xFFD946A6),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.favorite,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,10 +1,12 @@
 class SettingsModel {
   final NotificationSettings notificationSettings;
   final AppPreferences appPreferences;
+  final CycleSettings cycleSettings;
 
   SettingsModel({
     required this.notificationSettings,
     required this.appPreferences,
+    required this.cycleSettings,
   });
 
   // Convert to JSON
@@ -12,6 +14,7 @@ class SettingsModel {
     return {
       'notificationSettings': notificationSettings.toJson(),
       'appPreferences': appPreferences.toJson(),
+      'cycleSettings': cycleSettings.toJson(),
     };
   }
 
@@ -20,6 +23,7 @@ class SettingsModel {
     return SettingsModel(
       notificationSettings: NotificationSettings.fromJson(json['notificationSettings'] ?? {}),
       appPreferences: AppPreferences.fromJson(json['appPreferences'] ?? {}),
+      cycleSettings: CycleSettings.fromJson(json['cycleSettings'] ?? {}),
     );
   }
 
@@ -27,10 +31,12 @@ class SettingsModel {
   SettingsModel copyWith({
     NotificationSettings? notificationSettings,
     AppPreferences? appPreferences,
+    CycleSettings? cycleSettings,
   }) {
     return SettingsModel(
       notificationSettings: notificationSettings ?? this.notificationSettings,
       appPreferences: appPreferences ?? this.appPreferences,
+      cycleSettings: cycleSettings ?? this.cycleSettings,
     );
   }
 
@@ -38,6 +44,7 @@ class SettingsModel {
   static SettingsModel get defaultSettings => SettingsModel(
     notificationSettings: NotificationSettings.defaultSettings,
     appPreferences: AppPreferences.defaultPreferences,
+    cycleSettings: CycleSettings.defaultSettings,
   );
 }
 
@@ -152,4 +159,47 @@ class AppPreferences {
     'CET',
     'JST',
   ];
+}
+
+class CycleSettings {
+  final int cycleLength;
+  final int periodLength;
+
+  CycleSettings({
+    required this.cycleLength,
+    required this.periodLength,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cycleLength': cycleLength,
+      'periodLength': periodLength,
+    };
+  }
+
+  factory CycleSettings.fromJson(Map<String, dynamic> json) {
+    return CycleSettings(
+      cycleLength: json['cycleLength'] ?? 28,
+      periodLength: json['periodLength'] ?? 5,
+    );
+  }
+
+  CycleSettings copyWith({
+    int? cycleLength,
+    int? periodLength,
+  }) {
+    return CycleSettings(
+      cycleLength: cycleLength ?? this.cycleLength,
+      periodLength: periodLength ?? this.periodLength,
+    );
+  }
+
+  static CycleSettings get defaultSettings => CycleSettings(
+    cycleLength: 28,
+    periodLength: 5,
+  );
+
+  // Available options
+  static List<int> get availableCycleLengths => List.generate(20, (i) => i + 21);
+  static List<int> get availablePeriodLengths => List.generate(7, (i) => i + 1);
 }

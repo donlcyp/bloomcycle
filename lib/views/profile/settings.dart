@@ -14,6 +14,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _darkMode = false;
   String _selectedLanguage = 'English (US)';
   String _selectedTimeZone = 'Pacific Time (PT)';
+  int _cycleLength = 28;
+  int _periodLength = 5;
 
   final List<String> _languages = [
     'English (US)',
@@ -45,6 +47,8 @@ class _SettingsPageState extends State<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildNotificationSettings(),
+            const SizedBox(height: 32),
+            _buildCycleSettings(),
             const SizedBox(height: 32),
             _buildAppPreferences(),
           ],
@@ -105,6 +109,48 @@ class _SettingsPageState extends State<SettingsPage> {
               if (value && !_allNotifications) {
                 _allNotifications = true;
               }
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCycleSettings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Cycle Settings',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildSliderItem(
+          'Cycle Length',
+          'Average cycle length in days',
+          _cycleLength.toDouble(),
+          21,
+          40,
+          (value) {
+            setState(() {
+              _cycleLength = value.toInt();
+            });
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildSliderItem(
+          'Period Length',
+          'Average period length in days',
+          _periodLength.toDouble(),
+          1,
+          7,
+          (value) {
+            setState(() {
+              _periodLength = value.toInt();
             });
           },
         ),
@@ -238,6 +284,77 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSliderItem(
+    String title,
+    String subtitle,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD946A6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${value.toInt()} days',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFD946A6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: (max - min).toInt(),
+            activeColor: const Color(0xFFD946A6),
+            inactiveColor: Colors.grey[300],
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 }

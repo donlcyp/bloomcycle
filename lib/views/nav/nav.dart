@@ -37,8 +37,8 @@ class _NavBarState extends State<NavBar> {
       body: _pages[_selectedIndex],
       bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(18),
-          topRight: Radius.circular(18),
+          topLeft: Radius.circular(2),
+          topRight: Radius.circular(2),
         ),
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[

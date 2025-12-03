@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'auth/login.dart';
-import 'views/nav/nav.dart';
+import 'views/splash/splash_screen.dart';
+import 'services/firebase_service.dart';
 
-void main() {
+void main() async {
   // Initialize Flutter binding
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await FirebaseService.initialize();
+  
   // Hide status bar
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
@@ -29,9 +33,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFD946A6)),
       ),
-      home: const LoginPage(),
+      home: const SplashScreen(),
       routes: {
-        '/home': (context) => const NavBar(),
+        '/home': (context) => const SplashScreen(),
       },
     );
   }

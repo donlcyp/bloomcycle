@@ -107,7 +107,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildCycleOverview(double screenWidth, double screenHeight) {
-    final data = HomeData.cycleData;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,

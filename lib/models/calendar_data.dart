@@ -90,50 +90,32 @@ class CalendarData {
   }
 
   static List<CalendarDay> getCalendarDays() {
-    final baseDays = <CalendarDay>[
-      CalendarDay(day: 1, isFertileWindow: true, hasOvulation: true),
-      CalendarDay(day: 2, isFertileWindow: true, hasOvulation: true),
-      CalendarDay(day: 3, isFertileWindow: true, hasOvulation: true),
-      CalendarDay(day: 4, isFertileWindow: true, hasOvulation: true),
-      CalendarDay(day: 5, isFertileWindow: true),
-      CalendarDay(day: 6),
-      CalendarDay(day: 7),
-      CalendarDay(day: 8),
-      CalendarDay(day: 9),
-      CalendarDay(day: 10),
-      CalendarDay(day: 11),
-      CalendarDay(day: 12),
-      CalendarDay(day: 13),
-      CalendarDay(day: 14),
-      CalendarDay(day: 15),
-      CalendarDay(day: 16, isPeriodDay: true, isToday: true),
-      CalendarDay(day: 17, isPeriodDay: true),
-      CalendarDay(day: 18, isPeriodDay: true),
-      CalendarDay(day: 19, isPeriodDay: true),
-      CalendarDay(day: 20, isPeriodDay: true),
-      CalendarDay(day: 21, isPeriodDay: true),
-      CalendarDay(day: 22),
-      CalendarDay(day: 23),
-      CalendarDay(day: 24),
-      CalendarDay(day: 25),
-      CalendarDay(day: 26, isFertileWindow: true),
-      CalendarDay(day: 27, isFertileWindow: true),
-      CalendarDay(day: 28, isFertileWindow: true, hasOvulation: true),
-      CalendarDay(day: 29, isFertileWindow: true, hasOvulation: true),
-      CalendarDay(day: 30, isFertileWindow: true, hasOvulation: true),
-    ];
+    // Generate empty calendar days - no cycle indicators by default
+    final baseDays = <CalendarDay>[];
+    
+    // Get the number of days in the current month
+    final lastDayOfMonth = currentMonth.month == 12
+        ? DateTime(currentMonth.year + 1, 1, 0).day
+        : DateTime(currentMonth.year, currentMonth.month + 1, 0).day;
+
+    for (int day = 1; day <= lastDayOfMonth; day++) {
+      baseDays.add(CalendarDay(day: day));
+    }
 
     return baseDays.map((day) {
       final date = DateTime(currentMonth.year, currentMonth.month, day.day);
       final hasSymptoms = hasSymptomsForDate(date);
       final hasNotes = hasNoteForDate(date);
+      final isToday = date.day == DateTime.now().day &&
+          date.month == DateTime.now().month &&
+          date.year == DateTime.now().year;
 
       return CalendarDay(
         day: day.day,
-        isPeriodDay: day.isPeriodDay,
-        isFertileWindow: day.isFertileWindow,
-        isToday: day.isToday,
-        hasOvulation: day.hasOvulation,
+        isPeriodDay: false,
+        isFertileWindow: false,
+        isToday: isToday,
+        hasOvulation: false,
         hasSymptomsLogged: hasSymptoms,
         hasNotesAdded: hasNotes,
       );

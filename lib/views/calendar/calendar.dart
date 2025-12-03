@@ -166,7 +166,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 _buildCalendar(screenWidth, screenHeight),
                 SizedBox(height: screenHeight * 0.03),
                 // Legend
-                _buildLegend(screenWidth, screenHeight),
+                _buildSimpleLegend(screenWidth, screenHeight),
                 SizedBox(height: screenHeight * 0.02),
               ],
             ),
@@ -368,16 +368,32 @@ class _CalendarPageState extends State<CalendarPage> {
     Color? backgroundColor;
     Color? borderColor;
     Color textColor = Colors.black;
+    bool isOvulationDay = false;
 
     if (calendarDay.isToday) {
       backgroundColor = const Color(0xFFEC4899);
       textColor = Colors.white;
-    } else if (calendarDay.isPeriodDay) {
-      backgroundColor = const Color(0xFFFCE7F3);
-      borderColor = const Color(0xFFFCE7F3);
-    } else if (calendarDay.isFertileWindow) {
-      backgroundColor = const Color(0xFFD1FAE5);
-      borderColor = const Color(0xFFD1FAE5);
+    }
+    
+    // If cycle start is set, show cycle indicators
+    if (cycleStartDate != null) {
+      final date = DateTime(currentMonth.year, currentMonth.month, calendarDay.day);
+      final daysFromStart = date.difference(cycleStartDate!).inDays;
+      
+      if (daysFromStart >= 0 && daysFromStart < 5 && !calendarDay.isToday) {
+        // Period days (first 5 days)
+        backgroundColor = const Color(0xFFFCE7F3);
+        borderColor = const Color(0xFFFCE7F3);
+      } else if (daysFromStart >= 8 && daysFromStart < 13 && !calendarDay.isToday) {
+        // Fertile window
+        backgroundColor = const Color(0xFFD1FAE5);
+        borderColor = const Color(0xFFD1FAE5);
+      }
+      
+      // Ovulation day (day 14)
+      if (daysFromStart == 14) {
+        isOvulationDay = true;
+      }
     }
 
     return Stack(
@@ -418,13 +434,13 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ),
         // Ovulation indicator (top-right dot)
-        if (calendarDay.hasOvulation)
+        if (isOvulationDay || calendarDay.hasOvulation)
           Positioned(
             top: 4,
             right: 4,
             child: Container(
-              width: 6,
-              height: 6,
+              width: 8,
+              height: 8,
               decoration: const BoxDecoration(
                 color: Color(0xFF10B981),
                 shape: BoxShape.circle,
@@ -466,49 +482,6 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildLegend(double screenWidth, double screenHeight) {
-    final legendItems = CalendarData.getLegendItems();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Legend',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.02),
-          ...legendItems.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showLegendExplanation(item),
-                child: _buildLegendItem(item),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -645,6 +618,190 @@ class _CalendarPageState extends State<CalendarPage> {
         Text(
           item.label,
           style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimpleLegend(double screenWidth, double screenHeight) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Legend',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          SizedBox(height: screenHeight * 0.015),
+          // Today
+          _buildLegendRow(
+            color: const Color(0xFFEC4899),
+            label: 'Today',
+            screenWidth: screenWidth,
+          ),
+          SizedBox(height: screenHeight * 0.01),
+          // Period Days (shown after cycle start is set)
+          _buildLegendRow(
+            color: const Color(0xFFFCE7F3),
+            label: 'Period Days (Days 0-4)',
+            screenWidth: screenWidth,
+          ),
+          SizedBox(height: screenHeight * 0.01),
+          // Fertile Window (shown after cycle start is set)
+          _buildLegendRow(
+            color: const Color(0xFFD1FAE5),
+            label: 'Fertile Window (Days 8-12)',
+            screenWidth: screenWidth,
+          ),
+          SizedBox(height: screenHeight * 0.01),
+          // Ovulation Day
+          _buildOvulationLegendRow(screenWidth),
+          SizedBox(height: screenHeight * 0.01),
+          // Symptoms indicator
+          _buildSymptomLegendRow(screenWidth),
+          SizedBox(height: screenHeight * 0.01),
+          // Notes indicator
+          _buildNotesLegendRow(screenWidth),
+          SizedBox(height: screenHeight * 0.01),
+          Text(
+            'ℹ️ Cycle colors appear after you mark your menstruation start date',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendRow({
+    required Color color,
+    required String label,
+    required double screenWidth,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: color.withOpacity(0.5),
+              width: 1,
+            ),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.03),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSymptomLegendRow(double screenWidth) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          alignment: Alignment.center,
+          child: Container(
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEC4899),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.03),
+        const Text(
+          'Symptoms Logged',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOvulationLegendRow(double screenWidth) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          alignment: Alignment.center,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFF10B981),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.03),
+        const Text(
+          'Ovulation Day (Day 14)',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotesLegendRow(double screenWidth) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          alignment: Alignment.center,
+          child: Container(
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.03),
+        const Text(
+          'Notes Added',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.black87,
+          ),
         ),
       ],
     );

@@ -101,7 +101,7 @@ class InsightsPage extends StatelessWidget {
       maxCycle = currentMax;
     }
 
-    String _formatDate(DateTime date) {
+    String formatDate(DateTime date) {
       return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     }
 
@@ -393,7 +393,7 @@ class InsightsPage extends StatelessWidget {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Cycle starting ${_formatDate(cycle.startDate)}',
+                                        'Cycle starting ${formatDate(cycle.startDate)}',
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,

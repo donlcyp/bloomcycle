@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../auth/login.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,7 +12,6 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _logoController;
   late AnimationController _nameController;
-  late AnimationController _loadingController;
   late AnimationController _floatingController;
   late AnimationController _pulseController;
   
@@ -82,12 +80,6 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseScale = Tween<double>(begin: 1.0, end: 1.15).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
-    // Loading animation controller
-    _loadingController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
   }
 
   void _startSplashSequence() async {
@@ -98,11 +90,7 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 500));
     _nameController.forward();
 
-    // Step 3: Show loading screen (after 1.5s)
-    await Future.delayed(const Duration(milliseconds: 1500));
-    _loadingController.forward();
-
-    // Step 4: Navigate to login (after 2s of loading)
+    // Step 3: Navigate to login (after 2s)
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -116,7 +104,6 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _logoController.dispose();
     _nameController.dispose();
-    _loadingController.dispose();
     _floatingController.dispose();
     _pulseController.dispose();
     super.dispose();
@@ -149,7 +136,6 @@ class _SplashScreenState extends State<SplashScreen>
               animation: Listenable.merge([
                 _logoController,
                 _nameController,
-                _loadingController,
                 _floatingController,
                 _pulseController,
               ]),
@@ -300,89 +286,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.12),
-                    // Loading indicator with enhanced styling
-                    Opacity(
-                      opacity: _loadingController.value,
-                      child: Column(
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Rotating ring background
-                              Transform.rotate(
-                                angle: _loadingController.value * 6.28,
-                                child: Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: const Color(0xFFD946A6)
-                                          .withOpacity(0.1),
-                                      width: 2,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                              // Main progress indicator
-                              SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    const Color(0xFFD946A6).withOpacity(
-                                      0.5 +
-                                          (_loadingController.value * 0.5),
-                                    ),
-                                  ),
-                                  strokeWidth: 3,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: screenHeight * 0.03),
-                          Text(
-                            'Initializing...',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    // Decorative dots animation
-                    if (_loadingController.value > 0)
-                      Opacity(
-                        opacity: _loadingController.value,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(3, (index) {
-                            return Transform.scale(
-                              scale: 0.6 +
-                                  (0.4 *
-                                      (sin((_loadingController.value * 3) -
-                                              index * 0.3)
-                                          .abs())),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6),
-                                child: Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD946A6),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
+
                   ],
                 );
               },

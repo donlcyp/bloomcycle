@@ -1,5 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../views/setup/step1.dart';
+import '../services/firebase_service.dart';
+import 'login.dart';
+
+void _showTermsDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Terms of Service'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Terms of Service',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '1. Acceptance of Terms\n'
+                'By using BloomCycle, you agree to these terms and conditions.\n\n'
+                '2. Use License\n'
+                'Permission is granted to temporarily download one copy of materials on BloomCycle for personal, non-commercial transitory viewing.\n\n'
+                '3. Disclaimer\n'
+                'The materials and information provided on BloomCycle are provided on an "as is" basis without warranties of any kind.\n\n'
+                '4. Limitations of Liability\n'
+                'In no event shall BloomCycle be liable for any direct, indirect, incidental, special, or consequential damages.\n\n'
+                '5. Accuracy of Materials\n'
+                'The materials appearing on BloomCycle could include technical, typographical, or photographic errors.\n\n'
+                '6. Links\n'
+                'BloomCycle has not reviewed all of the sites linked to its website and is not responsible for the contents of any such linked site.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _showPrivacyDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Privacy Policy',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '1. Information Collection\n'
+                'We collect information you provide directly, such as when you create an account or contact us.\n\n'
+                '2. Use of Information\n'
+                'Your information is used to provide, improve, and maintain BloomCycle services.\n\n'
+                '3. Data Security\n'
+                'We implement appropriate technical and organizational measures to protect your data.\n\n'
+                '4. Third-Party Services\n'
+                'BloomCycle may use third-party services for analytics and other functions.\n\n'
+                '5. Your Rights\n'
+                'You have the right to access, modify, or delete your personal information.\n\n'
+                '6. Contact Us\n'
+                'If you have questions about this privacy policy, please contact us at privacy@bloomcycle.com',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -360,8 +454,12 @@ class _SignupPageState extends State<SignupPage> {
                                       fontSize: 11,
                                       color: Color(0xFFD946A6),
                                       fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
                                     ),
-                                    recognizer: null,
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        _showTermsDialog(context);
+                                      },
                                   ),
                                   const TextSpan(
                                     text: ' and ',
@@ -376,8 +474,12 @@ class _SignupPageState extends State<SignupPage> {
                                       fontSize: 11,
                                       color: Color(0xFFD946A6),
                                       fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
                                     ),
-                                    recognizer: null,
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        _showPrivacyDialog(context);
+                                      },
                                   ),
                                 ],
                               ),
@@ -433,25 +535,71 @@ class _SignupPageState extends State<SignupPage> {
                                     _isCreatingAccount = true;
                                   });
 
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 700),
-                                  );
+                                  try {
+                                    // Register user with Firebase
+                                    final userCredential = await FirebaseAuth.instance
+                                        .createUserWithEmailAndPassword(
+                                      email: _emailController.text.trim(),
+                                      password: _passwordController.text,
+                                    );
 
-                                  if (!mounted) return;
+                                    // Save user data to Firestore
+                                    await FirebaseService.createUser(
+                                      userCredential.user!.uid,
+                                      {
+                                        'firstName': _firstNameController.text,
+                                        'lastName': _lastNameController.text,
+                                        'email': _emailController.text.trim(),
+                                        'createdAt': DateTime.now(),
+                                      },
+                                    );
 
-                                  // Navigate to setup step 1
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SetupStep1(),
-                                    ),
-                                  );
+                                    if (!mounted) return;
+
+                                    // Navigate to setup step 1
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const SetupStep1(),
+                                      ),
+                                    );
+                                  } on FirebaseAuthException catch (e) {
+                                    String errorMessage = 'Registration failed';
+                                    if (e.code == 'weak-password') {
+                                      errorMessage = 'Password is too weak.';
+                                    } else if (e.code == 'email-already-in-use') {
+                                      errorMessage = 'Email is already registered.';
+                                    } else if (e.code == 'invalid-email') {
+                                      errorMessage = 'Invalid email address.';
+                                    } else {
+                                      errorMessage = e.message ?? 'Registration failed';
+                                    }
+
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(errorMessage)),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isCreatingAccount = false;
+                                      });
+                                    }
+                                  }
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD946A6),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 0,
                           ),
                           child: _isCreatingAccount
                               ? const SizedBox(
@@ -509,8 +657,8 @@ class _SignupPageState extends State<SignupPage> {
                         children: [
                           // Google Button
                           Container(
-                            width: 48,
-                            height: 48,
+                            width: 45,
+                            height: 45,
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey[300]!),
                               borderRadius: BorderRadius.circular(8),
@@ -523,7 +671,7 @@ class _SignupPageState extends State<SignupPage> {
                                 },
                                 child: const Icon(
                                   Icons.language,
-                                  size: 22,
+                                  size: 20,
                                   color: Colors.black,
                                 ),
                               ),
@@ -532,8 +680,8 @@ class _SignupPageState extends State<SignupPage> {
                           const SizedBox(width: 12),
                           // Facebook Button
                           Container(
-                            width: 48,
-                            height: 48,
+                            width: 45,
+                            height: 45,
                             decoration: BoxDecoration(
                               color: const Color(0xFF1877F2),
                               borderRadius: BorderRadius.circular(8),
@@ -546,7 +694,7 @@ class _SignupPageState extends State<SignupPage> {
                                 },
                                 child: const Icon(
                                   Icons.facebook,
-                                  size: 22,
+                                  size: 20,
                                   color: Colors.white,
                                 ),
                               ),
@@ -574,7 +722,16 @@ class _SignupPageState extends State<SignupPage> {
                                   color: Color(0xFFD946A6),
                                   fontWeight: FontWeight.w600,
                                 ),
-                                recognizer: null,
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const LoginPage(),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  },
                               ),
                             ],
                           ),

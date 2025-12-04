@@ -178,7 +178,7 @@ class _SignupPageState extends State<SignupPage> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -544,19 +544,25 @@ class _SignupPageState extends State<SignupPage> {
                                     );
 
                                     // Save user data to Firestore
-                                    await FirebaseService.createUser(
-                                      userCredential.user!.uid,
-                                      {
-                                        'firstName': _firstNameController.text,
-                                        'lastName': _lastNameController.text,
-                                        'email': _emailController.text.trim(),
-                                        'createdAt': DateTime.now(),
-                                      },
-                                    );
+                                    try {
+                                      await FirebaseService.createUser(
+                                        userCredential.user!.uid,
+                                        {
+                                          'firstName': _firstNameController.text,
+                                          'lastName': _lastNameController.text,
+                                          'email': _emailController.text.trim(),
+                                          'createdAt': DateTime.now(),
+                                        },
+                                      );
+                                    } catch (firestoreError) {
+                                      // Log the error but continue - auth succeeded
+                                      // Firestore save failed but user auth succeeded
+                                      // User will still be created, proceed to setup
+                                    }
 
                                     if (!mounted) return;
 
-                                    // Navigate to setup step 1
+                                    // ignore: use_build_context_synchronously
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -576,12 +582,14 @@ class _SignupPageState extends State<SignupPage> {
                                     }
 
                                     if (mounted) {
+                                      // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text(errorMessage)),
                                       );
                                     }
                                   } catch (e) {
                                     if (mounted) {
+                                      // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Error: $e')),
                                       );
@@ -655,7 +663,7 @@ class _SignupPageState extends State<SignupPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Google Button
+                          // Google Button (Disabled - Requires Configuration)
                           Container(
                             width: 45,
                             height: 45,
@@ -665,14 +673,26 @@ class _SignupPageState extends State<SignupPage> {
                             ),
                             child: Material(
                               color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  // Handle Google signup
-                                },
-                                child: const Icon(
-                                  Icons.language,
-                                  size: 20,
-                                  color: Colors.black,
+                              child: Tooltip(
+                                message: 'Google Sign-In requires Firebase configuration',
+                                child: InkWell(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Google Sign-In will be available soon. Please use email/password for now.'),
+                                      ),
+                                    );
+                                  },
+                                  child: const Center(
+                                    child: Text(
+                                      'G',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),

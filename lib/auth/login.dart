@@ -171,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -360,6 +360,7 @@ class _LoginPageState extends State<LoginPage> {
 
                                     if (!mounted) return;
 
+                                    // ignore: use_build_context_synchronously
                                     Navigator.of(context).pushAndRemoveUntil(
                                       MaterialPageRoute(
                                         builder: (context) => const NavBar(),
@@ -381,12 +382,13 @@ class _LoginPageState extends State<LoginPage> {
                                     }
 
                                     if (mounted) {
+                                      // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text(errorMessage)),
                                       );
                                     }
-                                  } catch (e) {
                                     if (mounted) {
+                                      // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Error: $e')),
                                       );
@@ -477,11 +479,22 @@ class _LoginPageState extends State<LoginPage> {
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: () {},
-                                child: const Icon(
-                                  Icons.language,
-                                  size: 20,
-                                  color: Colors.black,
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Google Sign-In will be available soon. Please use email/password for now.'),
+                                    ),
+                                  );
+                                },
+                                child: const Center(
+                                  child: Text(
+                                    'G',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),

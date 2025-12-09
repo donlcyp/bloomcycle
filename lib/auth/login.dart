@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup.dart';
 import '../views/nav/nav.dart';
+import '../views/admin/admin_dashboard.dart';
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -351,6 +352,21 @@ class _LoginPageState extends State<LoginPage> {
                                   });
 
                                   try {
+                                    // Check for placeholder admin account
+                                    if (_emailController.text.trim() == 'admin@bloomcycle.com' &&
+                                        _passwordController.text == 'admin123') {
+                                      if (!mounted) return;
+
+                                      // ignore: use_build_context_synchronously
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                          builder: (context) => const AdminDashboard(),
+                                        ),
+                                        (route) => false,
+                                      );
+                                      return;
+                                    }
+
                                     // Sign in with Firebase
                                     await FirebaseAuth.instance
                                         .signInWithEmailAndPassword(

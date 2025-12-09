@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../views/setup/step1.dart';
-import '../services/firebase_service.dart';
 import 'login.dart';
 
 void _showTermsDialog(BuildContext context) {
@@ -537,28 +536,11 @@ class _SignupPageState extends State<SignupPage> {
 
                                   try {
                                     // Register user with Firebase
-                                    final userCredential = await FirebaseAuth.instance
+                                    await FirebaseAuth.instance
                                         .createUserWithEmailAndPassword(
                                       email: _emailController.text.trim(),
                                       password: _passwordController.text,
                                     );
-
-                                    // Save user data to Firestore
-                                    try {
-                                      await FirebaseService.createUser(
-                                        userCredential.user!.uid,
-                                        {
-                                          'firstName': _firstNameController.text,
-                                          'lastName': _lastNameController.text,
-                                          'email': _emailController.text.trim(),
-                                          'createdAt': DateTime.now(),
-                                        },
-                                      );
-                                    } catch (firestoreError) {
-                                      // Log the error but continue - auth succeeded
-                                      // Firestore save failed but user auth succeeded
-                                      // User will still be created, proceed to setup
-                                    }
 
                                     if (!mounted) return;
 

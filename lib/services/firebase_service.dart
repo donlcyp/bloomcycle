@@ -1,19 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../firebase/firebase_option.dart';
 
 class FirebaseService {
-  static final FirebaseService _instance = FirebaseService._internal();
-  static late FirebaseFirestore _firestore;
   static bool _isInitialized = false;
 
-  FirebaseService._internal();
-
-  factory FirebaseService() {
-    return _instance;
-  }
-
-  // Initialize Firebase
+  // Initialize Firebase (placeholder)
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -21,232 +12,117 @@ class FirebaseService {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.android,
       );
-      _firestore = FirebaseFirestore.instance;
       _isInitialized = true;
+      // ignore: avoid_print
       print('✓ Firebase initialized successfully');
     } catch (e) {
-      print('✗ Firebase initialization error: $e');
-      rethrow;
+      // Ignore duplicate app error - Firebase may already be initialized
+      if (e.toString().contains('duplicate-app')) {
+        _isInitialized = true;
+        // ignore: avoid_print
+        print('✓ Firebase already initialized');
+      } else {
+        // ignore: avoid_print
+        print('✗ Firebase initialization error: $e');
+        rethrow;
+      }
     }
   }
 
-  // Get Firestore instance
-  static FirebaseFirestore get firestore {
-    if (!_isInitialized) {
-      throw Exception('Firebase not initialized. Call initialize() first.');
-    }
-    return _firestore;
-  }
-
-  // User Operations
+  // User Operations (Placeholder)
   static Future<void> createUser(String uid, Map<String, dynamic> userData) async {
-    try {
-      await firestore.collection('users').doc(uid).set(userData);
-      print('✓ User created: $uid');
-    } catch (e) {
-      print('✗ Error creating user: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ User data placeholder: $userData');
   }
 
   static Future<Map<String, dynamic>?> getUser(String uid) async {
-    try {
-      final doc = await firestore.collection('users').doc(uid).get();
-      return doc.data();
-    } catch (e) {
-      print('✗ Error fetching user: $e');
-      return null;
-    }
+    // Placeholder - return mock user data
+    return {
+      'firstName': 'Jane',
+      'lastName': 'Doe',
+      'email': uid,
+      'createdAt': DateTime.now(),
+    };
   }
 
   static Future<void> updateUser(String uid, Map<String, dynamic> data) async {
-    try {
-      await firestore.collection('users').doc(uid).update(data);
-      print('✓ User updated: $uid');
-    } catch (e) {
-      print('✗ Error updating user: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ User updated (placeholder): $data');
   }
 
-  // Cycle Data Operations
+  // Cycle Data Operations (Placeholder)
   static Future<void> saveCycleData(String uid, Map<String, dynamic> cycleData) async {
-    try {
-      await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('cycle_data')
-          .doc('current')
-          .set(cycleData);
-      print('✓ Cycle data saved for user: $uid');
-    } catch (e) {
-      print('✗ Error saving cycle data: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ Cycle data saved (placeholder): $cycleData');
   }
 
   static Future<Map<String, dynamic>?> getCycleData(String uid) async {
-    try {
-      final doc = await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('cycle_data')
-          .doc('current')
-          .get();
-      return doc.data();
-    } catch (e) {
-      print('✗ Error fetching cycle data: $e');
-      return null;
-    }
+    // Placeholder - return mock cycle data
+    return {
+      'cycleStart': DateTime.now().subtract(const Duration(days: 10)),
+      'cycleLength': 28,
+      'periodLength': 5,
+    };
   }
 
-  // Symptoms Logging
+  // Symptoms Logging (Placeholder)
   static Future<void> logSymptom(
     String uid,
     DateTime date,
     List<String> symptoms,
   ) async {
-    try {
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('symptoms')
-          .doc(dateStr)
-          .set({
-        'date': date,
-        'symptoms': symptoms,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      print('✓ Symptom logged for $dateStr');
-    } catch (e) {
-      print('✗ Error logging symptom: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ Symptom logged (placeholder): $symptoms');
   }
 
   static Future<List<Map<String, dynamic>>> getSymptoms(String uid) async {
-    try {
-      final snapshot = await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('symptoms')
-          .orderBy('date', descending: true)
-          .limit(30)
-          .get();
-      return snapshot.docs.map((doc) => doc.data()).toList();
-    } catch (e) {
-      print('✗ Error fetching symptoms: $e');
-      return [];
-    }
+    // Placeholder - return empty list
+    return [];
   }
 
-  // Notes Operations
+  // Notes Operations (Placeholder)
   static Future<void> saveNote(
     String uid,
     DateTime date,
     String noteText,
   ) async {
-    try {
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('notes')
-          .doc(dateStr)
-          .set({
-        'date': date,
-        'text': noteText,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      print('✓ Note saved for $dateStr');
-    } catch (e) {
-      print('✗ Error saving note: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ Note saved (placeholder): $noteText');
   }
 
   static Future<List<Map<String, dynamic>>> getNotes(String uid) async {
-    try {
-      final snapshot = await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('notes')
-          .orderBy('date', descending: true)
-          .get();
-      return snapshot.docs.map((doc) => doc.data()).toList();
-    } catch (e) {
-      print('✗ Error fetching notes: $e');
-      return [];
-    }
+    // Placeholder - return empty list
+    return [];
   }
 
-  // Mood Tracking
+  // Mood Tracking (Placeholder)
   static Future<void> logMood(
     String uid,
     DateTime date,
     String mood,
     int intensity,
   ) async {
-    try {
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('mood')
-          .doc(dateStr)
-          .set({
-        'date': date,
-        'mood': mood,
-        'intensity': intensity,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      print('✓ Mood logged for $dateStr');
-    } catch (e) {
-      print('✗ Error logging mood: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ Mood logged (placeholder): $mood');
   }
 
   static Future<List<Map<String, dynamic>>> getMoodHistory(String uid) async {
-    try {
-      final snapshot = await firestore
-          .collection('users')
-          .doc(uid)
-          .collection('mood')
-          .orderBy('date', descending: true)
-          .limit(30)
-          .get();
-      return snapshot.docs.map((doc) => doc.data()).toList();
-    } catch (e) {
-      print('✗ Error fetching mood history: $e');
-      return [];
-    }
+    // Placeholder - return empty list
+    return [];
   }
 
-  // Health Tips & Insights
+  // Health Tips & Insights (Placeholder)
   static Future<List<Map<String, dynamic>>> getHealthTips() async {
-    try {
-      final snapshot = await firestore
-          .collection('health_tips')
-          .orderBy('created_at', descending: true)
-          .limit(20)
-          .get();
-      return snapshot.docs.map((doc) => doc.data()).toList();
-    } catch (e) {
-      print('✗ Error fetching health tips: $e');
-      return [];
-    }
+    // Placeholder - return mock tips
+    return [
+      {'title': 'Stay Hydrated', 'content': 'Drink at least 8 glasses of water daily'},
+      {'title': 'Exercise', 'content': 'Light exercise can help with cycle symptoms'},
+    ];
   }
 
-  // Delete operations
+  // Delete operations (Placeholder)
   static Future<void> deleteUser(String uid) async {
-    try {
-      await firestore.collection('users').doc(uid).delete();
-      print('✓ User deleted: $uid');
-    } catch (e) {
-      print('✗ Error deleting user: $e');
-      rethrow;
-    }
+    // Placeholder - no database operation
+    print('✓ User deleted (placeholder): $uid');
   }
 }

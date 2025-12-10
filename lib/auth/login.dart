@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'signup.dart';
 import '../views/nav/nav.dart';
 import '../views/admin/admin_dashboard.dart';
@@ -108,12 +109,82 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoggingIn = false;
+  bool _isFacebookLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithFacebook() async {
+    setState(() {
+      _isFacebookLoading = true;
+    });
+
+    try {
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: const ['email', 'public_profile'],
+      );
+
+      switch (result.status) {
+        case LoginStatus.success:
+          final AccessToken? accessToken = result.accessToken;
+          if (accessToken == null) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Facebook login token missing.')),
+            );
+            break;
+          }
+
+          final OAuthCredential credential = FacebookAuthProvider.credential(
+            accessToken.token,
+          );
+
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+          if (!mounted) return;
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const NavBar()),
+            (route) => false,
+          );
+          break;
+        case LoginStatus.cancelled:
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Facebook login cancelled.')),
+          );
+          break;
+        case LoginStatus.failed:
+          final message = result.message ?? 'Facebook login failed.';
+          if (!mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+          break;
+        case LoginStatus.operationInProgress:
+          break;
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Facebook login failed.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Facebook login error: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFacebookLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -353,14 +424,17 @@ class _LoginPageState extends State<LoginPage> {
 
                                   try {
                                     // Check for placeholder admin account
-                                    if (_emailController.text.trim() == 'admin@bloomcycle.com' &&
-                                        _passwordController.text == 'admin123') {
+                                    if (_emailController.text.trim() ==
+                                            'admin@bloomcycle.com' &&
+                                        _passwordController.text ==
+                                            'admin123') {
                                       if (!mounted) return;
 
                                       // ignore: use_build_context_synchronously
                                       Navigator.of(context).pushAndRemoveUntil(
                                         MaterialPageRoute(
-                                          builder: (context) => const AdminDashboard(),
+                                          builder: (context) =>
+                                              const AdminDashboard(),
                                         ),
                                         (route) => false,
                                       );
@@ -370,9 +444,9 @@ class _LoginPageState extends State<LoginPage> {
                                     // Sign in with Firebase
                                     await FirebaseAuth.instance
                                         .signInWithEmailAndPassword(
-                                      email: _emailController.text.trim(),
-                                      password: _passwordController.text,
-                                    );
+                                          email: _emailController.text.trim(),
+                                          password: _passwordController.text,
+                                        );
 
                                     if (!mounted) return;
 
@@ -386,26 +460,33 @@ class _LoginPageState extends State<LoginPage> {
                                   } on FirebaseAuthException catch (e) {
                                     String errorMessage = 'Login failed';
                                     if (e.code == 'user-not-found') {
-                                      errorMessage = 'No account found with this email.';
+                                      errorMessage =
+                                          'No account found with this email.';
                                     } else if (e.code == 'wrong-password') {
                                       errorMessage = 'Incorrect password.';
                                     } else if (e.code == 'invalid-email') {
                                       errorMessage = 'Invalid email address.';
                                     } else if (e.code == 'user-disabled') {
-                                      errorMessage = 'This account has been disabled.';
+                                      errorMessage =
+                                          'This account has been disabled.';
                                     } else {
-                                      errorMessage = e.message ?? 'Login failed';
+                                      errorMessage =
+                                          e.message ?? 'Login failed';
                                     }
 
                                     if (mounted) {
                                       // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(content: Text(errorMessage)),
                                       );
                                     }
                                     if (mounted) {
                                       // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(content: Text('Error: $e')),
                                       );
                                     }
@@ -498,7 +579,9 @@ class _LoginPageState extends State<LoginPage> {
                                 onTap: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Google Sign-In will be available soon. Please use email/password for now.'),
+                                      content: Text(
+                                        'Google Sign-In will be available soon. Please use email/password for now.',
+                                      ),
                                     ),
                                   );
                                 },
@@ -526,11 +609,29 @@ class _LoginPageState extends State<LoginPage> {
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: () {},
-                                child: const Icon(
-                                  Icons.facebook,
-                                  size: 20,
-                                  color: Colors.white,
+                                onTap: _isFacebookLoading
+                                    ? null
+                                    : () {
+                                        _signInWithFacebook();
+                                      },
+                                child: Center(
+                                  child: _isFacebookLoading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.facebook,
+                                          size: 20,
+                                          color: Colors.white,
+                                        ),
                                 ),
                               ),
                             ),
@@ -549,10 +650,7 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         const TextSpan(
                           text: 'By signing in, you agree to our\n',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.black,
-                          ),
+                          style: TextStyle(fontSize: 10, color: Colors.black),
                         ),
                         TextSpan(
                           text: 'Terms of Service',
@@ -569,10 +667,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const TextSpan(
                           text: ' and ',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.black,
-                          ),
+                          style: TextStyle(fontSize: 10, color: Colors.black),
                         ),
                         TextSpan(
                           text: 'Privacy Policy',

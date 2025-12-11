@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'signup.dart';
 import '../views/nav/nav.dart';
 import '../views/admin/admin_dashboard.dart';
+import '../services/firebase_service.dart';
+import '../services/google_sign_in_helper.dart';
+import '../views/setup/step1.dart';
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -110,12 +113,140 @@ class _LoginPageState extends State<LoginPage> {
   bool _rememberMe = false;
   bool _isLoggingIn = false;
   bool _isFacebookLoading = false;
+  bool _isGoogleLoading = false;
+
+  Future<void> _handlePostSignIn(User? user, {required String source}) async {
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Authentication failed. Try again.')),
+      );
+      return;
+    }
+
+    final providerData = user.providerData.isNotEmpty
+        ? user.providerData.first
+        : null;
+
+    final profileData = {
+      'email': user.email,
+      'displayName': user.displayName,
+      'photoURL': user.photoURL,
+      'phoneNumber': user.phoneNumber,
+      'provider': source,
+      'providerId': providerData?.providerId,
+    };
+
+    try {
+      await FirebaseService.createUser(user.uid, {
+        'profile': profileData,
+        'lastSignInAt': DateTime.now(),
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to sync your profile: $e')),
+      );
+    }
+
+    await user.reload();
+    final refreshedUser = FirebaseAuth.instance.currentUser;
+
+    if (refreshedUser == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to complete sign-in. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (!refreshedUser.emailVerified) {
+      await refreshedUser.sendEmailVerification();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please verify your email. A verification link has been sent.',
+          ),
+        ),
+      );
+
+      await FirebaseAuth.instance.signOut();
+      return;
+    }
+
+    Map<String, dynamic>? userRecord;
+    try {
+      userRecord = await FirebaseService.getUser(refreshedUser.uid);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to load your profile: $e')),
+        );
+      }
+    }
+
+    final onboardingData =
+        (userRecord?['onboarding'] as Map<String, dynamic>?) ?? {};
+    final bool onboardingComplete = onboardingData['completed'] == true;
+
+    if (!mounted) return;
+
+    final destination = onboardingComplete
+        ? const NavBar()
+        : const SetupStep1();
+
+    // ignore: use_build_context_synchronously
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => destination),
+      (route) => false,
+    );
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true;
+    });
+
+    try {
+      final result = await signInWithGoogleCredential();
+
+      if (result == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in cancelled.')),
+        );
+        return;
+      }
+
+      await _handlePostSignIn(result.userCredential.user, source: 'google');
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Google sign-in failed.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _signInWithFacebook() async {
@@ -140,17 +271,13 @@ class _LoginPageState extends State<LoginPage> {
           }
 
           final OAuthCredential credential = FacebookAuthProvider.credential(
-            accessToken.token,
+            accessToken.tokenString,
           );
 
-          await FirebaseAuth.instance.signInWithCredential(credential);
+          final userCredential = await FirebaseAuth.instance
+              .signInWithCredential(credential);
 
-          if (!mounted) return;
-          // ignore: use_build_context_synchronously
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const NavBar()),
-            (route) => false,
-          );
+          await _handlePostSignIn(userCredential.user, source: 'facebook');
           break;
         case LoginStatus.cancelled:
           if (!mounted) return;
@@ -442,20 +569,16 @@ class _LoginPageState extends State<LoginPage> {
                                     }
 
                                     // Sign in with Firebase
-                                    await FirebaseAuth.instance
+                                    final credential = await FirebaseAuth
+                                        .instance
                                         .signInWithEmailAndPassword(
                                           email: _emailController.text.trim(),
                                           password: _passwordController.text,
                                         );
 
-                                    if (!mounted) return;
-
-                                    // ignore: use_build_context_synchronously
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                      MaterialPageRoute(
-                                        builder: (context) => const NavBar(),
-                                      ),
-                                      (route) => false,
+                                    await _handlePostSignIn(
+                                      credential.user,
+                                      source: 'email',
                                     );
                                   } on FirebaseAuthException catch (e) {
                                     String errorMessage = 'Login failed';
@@ -572,28 +695,35 @@ class _LoginPageState extends State<LoginPage> {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey[300]!),
                               borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
                             ),
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Google Sign-In will be available soon. Please use email/password for now.',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: const Center(
-                                  child: Text(
-                                    'G',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: _isGoogleLoading
+                                    ? null
+                                    : () {
+                                        _signInWithGoogle();
+                                      },
+                                child: Center(
+                                  child: _isGoogleLoading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Color(0xFF4285F4),
+                                                ),
+                                          ),
+                                        )
+                                      : Image.asset(
+                                          'assets/google.png',
+                                          width: 24,
+                                          height: 24,
+                                        ),
                                 ),
                               ),
                             ),

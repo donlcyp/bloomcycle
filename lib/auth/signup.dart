@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../views/setup/step1.dart';
 import 'login.dart';
+import '../services/firebase_service.dart';
+import '../services/google_sign_in_helper.dart';
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -111,6 +112,7 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
   bool _isCreatingAccount = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
@@ -120,6 +122,327 @@ class _SignupPageState extends State<SignupPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signUpWithGoogle() async {
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please agree to the terms to continue.')),
+      );
+      return;
+    }
+
+    final signupInfo = await _collectGoogleSignupData();
+    if (signupInfo == null) {
+      return;
+    }
+
+    setState(() {
+      _isGoogleLoading = true;
+    });
+
+    try {
+      final result = await signInWithGoogleCredential();
+
+      if (result == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in cancelled.')),
+        );
+        return;
+      }
+
+      final userCredential = result.userCredential;
+      final user = userCredential.user;
+      final googleUser = result.googleAccount;
+
+      if (user == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not complete Google sign-in. Please try again.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final providerData = user.providerData.isNotEmpty
+          ? user.providerData.first
+          : null;
+
+      final googleDisplayName =
+          (googleUser?.displayName ?? user.displayName ?? '').trim();
+      final nameParts = googleDisplayName
+          .split(RegExp(r'\s+'))
+          .where((part) => part.isNotEmpty)
+          .toList();
+
+      String firstName = _firstNameController.text.trim();
+      String lastName = _lastNameController.text.trim();
+
+      if (firstName.isEmpty && nameParts.isNotEmpty) {
+        firstName = nameParts.first;
+      }
+      if (lastName.isEmpty && nameParts.length > 1) {
+        lastName = nameParts.sublist(1).join(' ');
+      }
+
+      String displayName = [
+        firstName,
+        lastName,
+      ].where((value) => value.isNotEmpty).join(' ').trim();
+      if (displayName.isEmpty) {
+        displayName = googleDisplayName.isNotEmpty
+            ? googleDisplayName
+            : signupInfo.email;
+      }
+
+      if (displayName.isNotEmpty) {
+        await user.updateDisplayName(displayName);
+      }
+
+      try {
+        final emailCredential = EmailAuthProvider.credential(
+          email: signupInfo.email,
+          password: signupInfo.password,
+        );
+        await user.linkWithCredential(emailCredential);
+      } on FirebaseAuthException catch (e) {
+        final code = e.code;
+        if (code != 'provider-already-linked' &&
+            code != 'credential-already-in-use') {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Could not link email/password: ${e.message ?? code}',
+              ),
+            ),
+          );
+          await FirebaseAuth.instance.signOut();
+          return;
+        }
+      }
+
+      await FirebaseService.createUser(user.uid, {
+        'profile': {
+          'firstName': firstName,
+          'lastName': lastName,
+          'displayName': displayName,
+          'email': signupInfo.email,
+          'photoURL': user.photoURL,
+          'phoneNumber': user.phoneNumber,
+          'provider': 'google',
+          'providerId': providerData?.providerId,
+        },
+        'onboarding': {'completed': false, 'startedAt': DateTime.now()},
+        'lastSignInAt': DateTime.now(),
+      });
+
+      await user.sendEmailVerification();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account created! Please verify your email before signing in.',
+          ),
+        ),
+      );
+
+      await FirebaseAuth.instance.signOut();
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Google sign-in failed.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<_GoogleSignupInfo?> _collectGoogleSignupData() async {
+    final emailController = TextEditingController();
+    final email = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Enter your email'),
+              content: TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  hintText: 'you@example.com',
+                  errorText: errorText,
+                ),
+                onChanged: (_) {
+                  if (errorText != null) {
+                    setState(() {
+                      errorText = null;
+                    });
+                  }
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(null);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final value = emailController.text.trim();
+                    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    if (value.isEmpty || !emailRegex.hasMatch(value)) {
+                      setState(() {
+                        errorText = 'Please enter a valid email address.';
+                      });
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop(value);
+                  },
+                  child: const Text('Next'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (email == null) {
+      return null;
+    }
+
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        String? errorText;
+        bool obscure = true;
+        bool obscureConfirm = true;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Create a password'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: passwordController,
+                    obscureText: obscure,
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscure ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscure = !obscure;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmController,
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      hintText: 'Confirm password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscureConfirm = !obscureConfirm;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      errorText!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(null);
+                  },
+                  child: const Text('Back'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final passwordValue = passwordController.text;
+                    final confirmValue = confirmController.text;
+
+                    if (passwordValue.length < 8) {
+                      setState(() {
+                        errorText = 'Password must be at least 8 characters.';
+                      });
+                      return;
+                    }
+
+                    if (passwordValue != confirmValue) {
+                      setState(() {
+                        errorText = 'Passwords do not match.';
+                      });
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop(passwordValue);
+                  },
+                  child: const Text('Finish'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (password == null) {
+      return null;
+    }
+
+    return _GoogleSignupInfo(email: email, password: password);
   }
 
   @override
@@ -535,44 +858,93 @@ class _SignupPageState extends State<SignupPage> {
                                   });
 
                                   try {
-                                    // Register user with Firebase
-                                    await FirebaseAuth.instance
+                                    final userCredential = await FirebaseAuth
+                                        .instance
                                         .createUserWithEmailAndPassword(
-                                      email: _emailController.text.trim(),
-                                      password: _passwordController.text,
-                                    );
+                                          email: _emailController.text.trim(),
+                                          password: _passwordController.text,
+                                        );
+
+                                    final user = userCredential.user;
+
+                                    if (user != null) {
+                                      final firstName = _firstNameController
+                                          .text
+                                          .trim();
+                                      final lastName = _lastNameController.text
+                                          .trim();
+
+                                      await user.updateDisplayName(
+                                        '$firstName $lastName'.trim(),
+                                      );
+
+                                      await FirebaseService.createUser(
+                                        user.uid,
+                                        {
+                                          'profile': {
+                                            'firstName': firstName,
+                                            'lastName': lastName,
+                                            'displayName':
+                                                '$firstName $lastName'.trim(),
+                                            'email': user.email,
+                                          },
+                                          'onboarding': {
+                                            'completed': false,
+                                            'startedAt': DateTime.now(),
+                                          },
+                                        },
+                                      );
+
+                                      await user.sendEmailVerification();
+                                    }
 
                                     if (!mounted) return;
 
-                                    // ignore: use_build_context_synchronously
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const SetupStep1(),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Account created! Please verify your email before signing in.',
+                                        ),
                                       ),
+                                    );
+
+                                    await FirebaseAuth.instance.signOut();
+
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                        builder: (context) => const LoginPage(),
+                                      ),
+                                      (route) => false,
                                     );
                                   } on FirebaseAuthException catch (e) {
                                     String errorMessage = 'Registration failed';
                                     if (e.code == 'weak-password') {
                                       errorMessage = 'Password is too weak.';
-                                    } else if (e.code == 'email-already-in-use') {
-                                      errorMessage = 'Email is already registered.';
+                                    } else if (e.code ==
+                                        'email-already-in-use') {
+                                      errorMessage =
+                                          'Email is already registered.';
                                     } else if (e.code == 'invalid-email') {
                                       errorMessage = 'Invalid email address.';
                                     } else {
-                                      errorMessage = e.message ?? 'Registration failed';
+                                      errorMessage =
+                                          e.message ?? 'Registration failed';
                                     }
 
                                     if (mounted) {
                                       // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(content: Text(errorMessage)),
                                       );
                                     }
                                   } catch (e) {
                                     if (mounted) {
                                       // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(content: Text('Error: $e')),
                                       );
                                     }
@@ -645,36 +1017,39 @@ class _SignupPageState extends State<SignupPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Google Button (Disabled - Requires Configuration)
                           Container(
                             width: 45,
                             height: 45,
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey[300]!),
                               borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
                             ),
                             child: Material(
                               color: Colors.transparent,
-                              child: Tooltip(
-                                message: 'Google Sign-In requires Firebase configuration',
-                                child: InkWell(
-                                  onTap: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Google Sign-In will be available soon. Please use email/password for now.'),
-                                      ),
-                                    );
-                                  },
-                                  child: const Center(
-                                    child: Text(
-                                      'G',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: _isGoogleLoading
+                                    ? null
+                                    : _signUpWithGoogle,
+                                child: Center(
+                                  child: _isGoogleLoading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Color(0xFF4285F4),
+                                                ),
+                                          ),
+                                        )
+                                      : Image.asset(
+                                          'assets/google.png',
+                                          width: 24,
+                                          height: 24,
+                                        ),
                                 ),
                               ),
                             ),
@@ -750,4 +1125,11 @@ class _SignupPageState extends State<SignupPage> {
       ),
     );
   }
+}
+
+class _GoogleSignupInfo {
+  const _GoogleSignupInfo({required this.email, required this.password});
+
+  final String email;
+  final String password;
 }

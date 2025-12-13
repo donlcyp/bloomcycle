@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'step3.dart';
 import '../../models/cycle_history.dart';
 import '../../main.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
+import '../../state/user_state.dart';
 
 class SetupStep2 extends StatefulWidget {
   const SetupStep2({super.key});
@@ -428,6 +431,32 @@ class _SetupStep2State extends State<SetupStep2> {
                                                 );
                                           }
                                         } catch (_) {}
+
+                                        final user =
+                                            FirebaseAuth.instance.currentUser;
+                                        if (user != null) {
+                                          final cycleLen = UserState
+                                              .currentUser
+                                              .settings
+                                              .cycleSettings
+                                              .cycleLength;
+                                          final periodLen = UserState
+                                              .currentUser
+                                              .settings
+                                              .cycleSettings
+                                              .periodLength;
+                                          FirebaseService.saveCycleData(
+                                            user.uid,
+                                            {
+                                              'cycleStart': DateFormat(
+                                                      'M/d/yyyy')
+                                                  .parse(_cycleStartController
+                                                      .text),
+                                              'cycleLength': cycleLen,
+                                              'periodLength': periodLen,
+                                            },
+                                          );
+                                        }
 
                                         appScaffoldMessengerKey.currentState
                                             ?.showSnackBar(

@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'login.dart';
 import '../services/firebase_service.dart';
 import '../services/google_sign_in_helper.dart';
-import '../main.dart';
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -214,8 +213,8 @@ class _SignupPageState extends State<SignupPage> {
         final code = e.code;
         if (code != 'provider-already-linked' &&
             code != 'credential-already-in-use') {
-          if (!context.mounted) return;
-          appScaffoldMessengerKey.currentState?.showSnackBar(
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 'Could not link email/password: ${e.message ?? code}',
@@ -253,8 +252,9 @@ class _SignupPageState extends State<SignupPage> {
 
       await user.sendEmailVerification();
 
-      if (!context.mounted) return;
-      appScaffoldMessengerKey.currentState?.showSnackBar(
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
             'Account created! Please verify your email before signing in.',
@@ -264,20 +264,20 @@ class _SignupPageState extends State<SignupPage> {
 
       await FirebaseAuth.instance.signOut();
 
-      if (!context.mounted) return;
-      appNavigatorKey.currentState?.pushAndRemoveUntil(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
         (route) => false,
       );
     } on FirebaseAuthException catch (e) {
-      if (!context.mounted) return;
-      appScaffoldMessengerKey.currentState?.showSnackBar(
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Google sign-in failed.')),
       );
     } catch (e) {
-      if (!context.mounted) return;
-      appScaffoldMessengerKey.currentState
-          ?.showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -289,10 +289,8 @@ class _SignupPageState extends State<SignupPage> {
 
   Future<_GoogleSignupInfo?> _collectGoogleSignupData() async {
     final emailController = TextEditingController();
-    final dialogCtx1 = appNavigatorKey.currentContext;
-    if (dialogCtx1 == null) return null;
     final email = await showDialog<String>(
-      context: dialogCtx1,
+      context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         String? errorText;
@@ -344,18 +342,15 @@ class _SignupPageState extends State<SignupPage> {
       },
     );
 
-  if (email == null) {
-    return null;
-  }
+    if (email == null) {
+      return null;
+    }
 
-  final passwordController = TextEditingController();
-  final confirmController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
 
-  if (!context.mounted) return null;
-    final dialogCtx2 = appNavigatorKey.currentContext;
-    if (dialogCtx2 == null) return null;
     final password = await showDialog<String>(
-      context: dialogCtx2,
+      context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         String? errorText;
@@ -804,13 +799,11 @@ class _SignupPageState extends State<SignupPage> {
                         onPressed: _isCreatingAccount
                             ? null
                             : () async {
-                                final messenger = appScaffoldMessengerKey.currentState;
-                                final navState = appNavigatorKey.currentState;
                                 if (_firstNameController.text.isEmpty ||
                                     _emailController.text.isEmpty ||
                                     _passwordController.text.isEmpty ||
                                     _confirmPasswordController.text.isEmpty) {
-                                  messenger?.showSnackBar(
+                                  ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Please fill in all required fields.',
@@ -821,7 +814,7 @@ class _SignupPageState extends State<SignupPage> {
                                 }
                                 if (_passwordController.text !=
                                     _confirmPasswordController.text) {
-                                  messenger?.showSnackBar(
+                                  ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Passwords do not match.'),
                                     ),
@@ -880,9 +873,9 @@ class _SignupPageState extends State<SignupPage> {
                                     await user.sendEmailVerification();
                                   }
 
-                                  if (!context.mounted) return;
+                                  if (!mounted) return;
 
-                                  messenger?.showSnackBar(
+                                  ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Account created! Please verify your email before signing in.',
@@ -892,8 +885,7 @@ class _SignupPageState extends State<SignupPage> {
 
                                   await FirebaseAuth.instance.signOut();
 
-                                  if (!context.mounted) return;
-                                  navState?.pushAndRemoveUntil(
+                                  Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                       builder: (context) => const LoginPage(),
                                     ),
@@ -913,15 +905,19 @@ class _SignupPageState extends State<SignupPage> {
                                         e.message ?? 'Registration failed';
                                   }
 
-                                  if (!context.mounted) return;
-                                  messenger?.showSnackBar(
-                                    SnackBar(content: Text(errorMessage)),
-                                  );
+                                  if (mounted) {
+                                    // ignore: use_build_context_synchronously
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(errorMessage)),
+                                    );
+                                  }
                                 } catch (e) {
-                                  if (!context.mounted) return;
-                                  messenger?.showSnackBar(
-                                    SnackBar(content: Text('Error: $e')),
-                                  );
+                                  if (mounted) {
+                                    // ignore: use_build_context_synchronously
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')),
+                                    );
+                                  }
                                 } finally {
                                   if (mounted) {
                                     setState(() {

@@ -50,7 +50,6 @@ class FirebaseService {
     Map<String, dynamic> userData,
   ) async {
     final docRef = _userCollection().doc(uid);
-    final snapshot = await docRef.get();
 
     final dataToPersist = _serialize({
       ...userData,
@@ -58,14 +57,10 @@ class FirebaseService {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    if (snapshot.exists) {
-      await docRef.set(dataToPersist, SetOptions(merge: true));
-    } else {
-      await docRef.set({
-        ...dataToPersist,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
+    await docRef.set({
+      ...dataToPersist,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   static Future<Map<String, dynamic>?> getUser(String uid) async {
@@ -125,6 +120,18 @@ class FirebaseService {
     final data = doc.data();
     data['id'] = doc.id;
     return _deserialize(data);
+  }
+
+  static Future<List<Map<String, dynamic>>> getCycles(String uid) async {
+    final snapshot = await _cyclesRef(uid)
+        .orderBy('cycleStart', descending: true)
+        .limit(24)
+        .get();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return _deserialize(data) as Map<String, dynamic>;
+    }).toList();
   }
 
   // endregion

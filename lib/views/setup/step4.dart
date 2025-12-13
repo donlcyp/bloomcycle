@@ -1,5 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../services/firebase_service.dart';
 import '../../state/user_state.dart';
+import '../nav/nav.dart';
+import '../../main.dart';
 
 class SetupStep4 extends StatefulWidget {
   const SetupStep4({super.key});
@@ -11,6 +16,44 @@ class SetupStep4 extends StatefulWidget {
 class _SetupStep4State extends State<SetupStep4> {
   final TextEditingController _weightController = TextEditingController();
   String _selectedUnit = 'lbs';
+  bool _isSubmitting = false;
+
+  Future<bool> _completeOnboarding({double? weightKg}) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      appScaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(
+          content: Text('You need to be signed in to continue.'),
+        ),
+      );
+      return false;
+    }
+
+    try {
+      await FirebaseService.updateUser(user.uid, {
+        'onboarding': {'completed': true, 'completedAt': DateTime.now()},
+        if (weightKg != null)
+          'profile': {'weightKg': weightKg, 'weightUpdatedAt': DateTime.now()},
+      });
+      return true;
+    } on FirebaseException catch (e) {
+      appScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(
+            e.code == 'permission-denied'
+                ? 'We could not save your profile. Please check Firestore rules.'
+                : e.message ?? 'Failed to complete onboarding.',
+          ),
+        ),
+      );
+      return false;
+    } catch (e) {
+      appScaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Something went wrong. Try again.')),
+      );
+      return false;
+    }
+  }
 
   @override
   void dispose() {
@@ -163,9 +206,9 @@ class _SetupStep4State extends State<SetupStep4> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                  boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -400,28 +443,64 @@ class _SetupStep4State extends State<SetupStep4> {
                             child: SizedBox(
                               height: 48,
                               child: ElevatedButton(
-                                onPressed: _weightController.text.isEmpty
+                                onPressed:
+                                    _weightController.text.isEmpty ||
+                                        _isSubmitting
                                     ? null
-                                    : () {
-                                        // Store weight in user state
+                                    : () async {
+                                        setState(() {
+                                          _isSubmitting = true;
+                                        });
+
+                                        double? kg;
                                         try {
                                           final raw = _weightController.text
                                               .trim();
                                           final value = double.parse(raw);
-                                          double kg;
-                                          if (_selectedUnit == 'kg') {
-                                            kg = value;
-                                          } else {
-                                            // lbs to kg
-                                            kg = value * 0.45359237;
-                                          }
+                                          kg = _selectedUnit == 'kg'
+                                              ? value
+                                              : value * 0.45359237;
                                           UserState.weightKg = kg;
-                                        } catch (_) {}
+                                        } catch (_) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Please enter a valid weight.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          setState(() {
+                                            _isSubmitting = false;
+                                          });
+                                          return;
+                                        }
 
-                                        Navigator.of(
-                                          context,
-                                        ).pushNamedAndRemoveUntil(
-                                          '/home',
+                                        final success =
+                                            await _completeOnboarding(
+                                              weightKg: kg,
+                                            );
+
+                                        if (!mounted) return;
+
+                                        setState(() {
+                                          _isSubmitting = false;
+                                        });
+
+                                        if (!success) {
+                                          return;
+                                        }
+
+                                        if (!context.mounted) return;
+                                        appNavigatorKey.currentState
+                                            ?.pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const NavBar(),
+                                          ),
                                           (route) => false,
                                         );
                                       },
@@ -432,13 +511,25 @@ class _SetupStep4State extends State<SetupStep4> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Continue',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                child: _isSubmitting
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Continue',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),
@@ -447,11 +538,34 @@ class _SetupStep4State extends State<SetupStep4> {
                       const SizedBox(height: 16),
                       Center(
                         child: GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Skipped to home')),
-                            );
-                          },
+                          onTap: _isSubmitting
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _isSubmitting = true;
+                                  });
+
+                                  final success = await _completeOnboarding();
+
+                                  if (!mounted) return;
+
+                                  setState(() {
+                                    _isSubmitting = false;
+                                  });
+
+                                  if (!success) {
+                                    return;
+                                  }
+
+                                  if (!context.mounted) return;
+                                  appNavigatorKey.currentState
+                                      ?.pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                      builder: (context) => const NavBar(),
+                                    ),
+                                    (route) => false,
+                                  );
+                                },
                           child: const Text(
                             'Skip for now',
                             style: TextStyle(

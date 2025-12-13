@@ -8,6 +8,10 @@ import '../views/admin/admin_dashboard.dart';
 import '../services/firebase_service.dart';
 import '../services/google_sign_in_helper.dart';
 import '../views/setup/step1.dart';
+import '../state/user_state.dart';
+import '../models/profile_model.dart';
+import '../models/user_profile_data.dart';
+import '../main.dart';
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -118,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handlePostSignIn(User? user, {required String source}) async {
     if (user == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      appScaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(content: Text('Authentication failed. Try again.')),
       );
       return;
@@ -137,14 +141,24 @@ class _LoginPageState extends State<LoginPage> {
       'providerId': providerData?.providerId,
     };
 
+    bool permissionDenied = false;
+
     try {
       await FirebaseService.createUser(user.uid, {
         'profile': profileData,
         'lastSignInAt': DateTime.now(),
       });
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      permissionDenied = e.code == 'permission-denied';
+      final message = permissionDenied
+          ? 'We could not sync your profile because Firestore security rules blocked the write. Make sure authenticated users can read/write their own users/{uid} document.'
+          : e.message ?? 'Failed to sync your profile.';
+      appScaffoldMessengerKey.currentState
+          ?.showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      appScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('Failed to sync your profile: $e')),
       );
     }
@@ -154,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (refreshedUser == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      appScaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(
           content: Text('Unable to complete sign-in. Please try again.'),
         ),
@@ -181,9 +195,18 @@ class _LoginPageState extends State<LoginPage> {
     Map<String, dynamic>? userRecord;
     try {
       userRecord = await FirebaseService.getUser(refreshedUser.uid);
+    } on FirebaseException catch (e) {
+      permissionDenied = permissionDenied || e.code == 'permission-denied';
+      if (mounted) {
+        final message = permissionDenied
+            ? 'Unable to load your profile because Firestore security rules blocked the read.'
+            : e.message ?? 'Unable to load your profile.';
+        appScaffoldMessengerKey.currentState
+            ?.showSnackBar(SnackBar(content: Text(message)));
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        appScaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(content: Text('Unable to load your profile: $e')),
         );
       }
@@ -191,7 +214,9 @@ class _LoginPageState extends State<LoginPage> {
 
     final onboardingData =
         (userRecord?['onboarding'] as Map<String, dynamic>?) ?? {};
-    final bool onboardingComplete = onboardingData['completed'] == true;
+    final bool onboardingComplete = permissionDenied
+        ? true
+        : onboardingData['completed'] == true;
 
     if (!mounted) return;
 
@@ -199,10 +224,48 @@ class _LoginPageState extends State<LoginPage> {
         ? const NavBar()
         : const SetupStep1();
 
-    // ignore: use_build_context_synchronously
-    Navigator.of(context).pushAndRemoveUntil(
+    final profile = _toProfileModel(refreshedUser, userRecord);
+    UserState.currentUser = UserProfileData(
+      profile: profile,
+      healthData: UserState.currentUser.healthData,
+      settings: UserState.currentUser.settings,
+      privacy: UserState.currentUser.privacy,
+    );
+
+    if (!context.mounted) return;
+    appNavigatorKey.currentState?.pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => destination),
       (route) => false,
+    );
+  }
+
+  ProfileModel _toProfileModel(User user, Map<String, dynamic>? userRecord) {
+    final profileMap = (userRecord?['profile'] as Map<String, dynamic>?) ?? {};
+    final displayName = (profileMap['displayName'] as String?) ?? user.displayName ?? '';
+    final parts = displayName.trim().split(' ');
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    final email = (profileMap['email'] as String?) ?? user.email ?? '';
+    final phone = (profileMap['phoneNumber'] as String?) ?? user.phoneNumber ?? '';
+    final photoURL = (profileMap['photoURL'] as String?) ?? user.photoURL ?? '';
+    final createdAt = (userRecord?['createdAt'] as DateTime?) ??
+        user.metadata.creationTime ??
+        DateTime.now();
+    final cycleLength = (userRecord?['profile']?['cycleLength'] as int?) ?? 28;
+    final location = (userRecord?['profile']?['location'] as String?) ?? '';
+    final bio = (userRecord?['profile']?['bio'] as String?) ?? '';
+
+    return ProfileModel(
+      id: user.uid,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      phoneNumber: phone,
+      location: location,
+      bio: bio,
+      avatarUrl: photoURL,
+      memberSince: createdAt,
+      cycleLength: cycleLength,
     );
   }
 
@@ -223,7 +286,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (result == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        appScaffoldMessengerKey.currentState?.showSnackBar(
           const SnackBar(content: Text('Google sign-in cancelled.')),
         );
         return;
@@ -232,14 +295,13 @@ class _LoginPageState extends State<LoginPage> {
       await _handlePostSignIn(result.userCredential.user, source: 'google');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      appScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(e.message ?? 'Google sign-in failed.')),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
+      appScaffoldMessengerKey.currentState
+          ?.showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -597,22 +659,10 @@ class _LoginPageState extends State<LoginPage> {
                                           e.message ?? 'Login failed';
                                     }
 
-                                    if (mounted) {
-                                      // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(content: Text(errorMessage)),
-                                      );
-                                    }
-                                    if (mounted) {
-                                      // ignore: use_build_context_synchronously
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(content: Text('Error: $e')),
-                                      );
-                                    }
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(errorMessage)),
+                                    );
                                   } finally {
                                     if (mounted) {
                                       setState(() {

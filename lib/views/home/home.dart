@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
+import '../../state/user_state.dart';
 import '../../models/home_data.dart';
 import '../chat/health_chat.dart';
 import '../logs/symptoms_log.dart';
@@ -13,6 +16,67 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  CycleData? _cycleData;
+  bool _loadingCycle = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCycle();
+  }
+
+  Future<void> _loadCycle() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _loadingCycle = false;
+      });
+      return;
+    }
+    final latest = await FirebaseService.getCycleData(user.uid);
+    final cycleStart = latest?['cycleStart'] as DateTime?;
+    final cycleLength = UserState.currentUser.profile.cycleLength;
+    if (cycleStart == null) {
+      setState(() {
+        _loadingCycle = false;
+        _cycleData = null;
+      });
+      return;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(cycleStart.year, cycleStart.month, cycleStart.day);
+    final daysFromStart = today.difference(start).inDays;
+    final currentDayRaw = daysFromStart + 1;
+    final currentDay = currentDayRaw.clamp(1, cycleLength);
+    final daysLeft = (cycleLength - currentDay).clamp(0, cycleLength);
+    final phase = _phaseForDay(currentDay);
+    final progress = (currentDay / cycleLength).clamp(0.0, 1.0);
+    setState(() {
+      _cycleData = CycleData(
+        currentDay: currentDay,
+        daysLeft: daysLeft,
+        currentPhase: phase,
+        nextDate: 'Day $cycleLength',
+        cycleProgress: progress,
+        totalCycleDays: cycleLength,
+      );
+      _loadingCycle = false;
+    });
+  }
+
+  String _phaseForDay(int currentDay) {
+    if (currentDay >= 1 && currentDay <= 5) {
+      return 'Menstruation';
+    } else if (currentDay >= 6 && currentDay <= 13) {
+      return 'Follicular';
+    } else if (currentDay >= 14 && currentDay <= 15) {
+      return 'Ovulation';
+    } else {
+      return 'Luteal';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -70,7 +134,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -119,14 +183,43 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildCycleOverview(double screenWidth, double screenHeight) {
-    final data = HomeData.cycleData;
+    if (_loadingCycle) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(screenWidth * 0.05),
+        child: SizedBox(
+          height: 80,
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD946A6)),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final data = _cycleData;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -144,28 +237,50 @@ class _HomePageState extends State<HomePage> {
               color: Colors.black,
             ),
           ),
-          Text(
-            'Current cycle: ${data.totalCycleDays} days',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 12 : 11,
-              color: Colors.grey,
+          if (data != null)
+            Text(
+              'Current cycle: ${data.totalCycleDays} days',
+              style: TextStyle(
+                fontSize: screenWidth > 600 ? 12 : 11,
+                color: Colors.grey,
+              ),
+            )
+          else
+            Text(
+              'No cycle data yet. Mark your cycle start in Calendar.',
+              style: TextStyle(
+                fontSize: screenWidth > 600 ? 12 : 11,
+                color: Colors.grey,
+              ),
             ),
-          ),
           SizedBox(height: screenHeight * 0.02),
           // Progress Bar with Timeline
           Column(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: data.cycleProgress,
-                  minHeight: 8,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFFD946A6),
+              if (data != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: data.cycleProgress,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFFD946A6),
+                    ),
+                  ),
+                )
+              else
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: 0,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFFD946A6),
+                    ),
                   ),
                 ),
-              ),
               SizedBox(height: screenHeight * 0.015),
               // Timeline labels
               Row(
@@ -176,7 +291,7 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                   ),
                   Text(
-                    'Day ${data.currentDay} (Today)',
+                    'Day ${data != null ? data.currentDay : 1} (Today)',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -184,7 +299,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   Text(
-                    'Day ${data.totalCycleDays}',
+                    'Day ${data != null ? data.totalCycleDays : 28}',
                     style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                   ),
                 ],
@@ -199,7 +314,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Expanded(
                   child: _buildCycleInfoBoxNew(
-                    '${data.currentDay}',
+                    '${data != null ? data.currentDay : 1}',
                     'Current\nDay',
                     const Color(0xFFFF6B6B),
                     screenHeight,
@@ -208,7 +323,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(width: screenWidth * 0.03),
                 Expanded(
                   child: _buildCycleInfoBoxNew(
-                    '${data.daysLeft}',
+                    '${data != null ? data.daysLeft : 27}',
                     'Days to\nPeriod',
                     const Color(0xFF4DABF7),
                     screenHeight,
@@ -217,7 +332,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(width: screenWidth * 0.03),
                 Expanded(
                   child: _buildCycleInfoBoxNew(
-                    data.currentPhase,
+                    data != null ? data.currentPhase : 'Follicular',
                     'Current\nPhase',
                     const Color(0xFF51CF66),
                     screenHeight,
@@ -241,9 +356,9 @@ class _HomePageState extends State<HomePage> {
       height: 115,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -380,7 +495,7 @@ class _HomePageState extends State<HomePage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -427,7 +542,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -508,7 +623,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -589,7 +704,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

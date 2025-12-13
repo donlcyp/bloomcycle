@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/calendar_data.dart';
+import '../../services/firebase_service.dart';
 import '../logs/symptoms_log.dart';
 import '../logs/notes_log.dart';
 import '../logs/notes_history.dart';
@@ -27,6 +29,12 @@ class _CalendarPageState extends State<CalendarPage> {
     setState(() {
       cycleStartDate = DateTime(now.year, now.month, now.day);
     });
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseService.saveCycleData(user.uid, {
+        'cycleStart': cycleStartDate!,
+      });
+    }
   }
 
   void _openDayDetailsBottomSheet(
@@ -184,7 +192,7 @@ class _CalendarPageState extends State<CalendarPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -259,7 +267,7 @@ class _CalendarPageState extends State<CalendarPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -492,7 +500,7 @@ class _CalendarPageState extends State<CalendarPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -567,10 +575,7 @@ class _CalendarPageState extends State<CalendarPage> {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: color.withOpacity(0.5),
-              width: 1,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
           ),
         ),
         SizedBox(width: screenWidth * 0.03),

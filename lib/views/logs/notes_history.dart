@@ -1,17 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
 
-import '../../models/calendar_data.dart';
-
-class NotesHistoryPage extends StatelessWidget {
+class NotesHistoryPage extends StatefulWidget {
   const NotesHistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final notesMap = CalendarData.getAllNotes();
-    final entries = notesMap.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key)); // newest first
+  State<NotesHistoryPage> createState() => _NotesHistoryPageState();
+}
 
+class _NotesHistoryPageState extends State<NotesHistoryPage> {
+  List<Map<String, dynamic>> _notes = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotes();
+  }
+
+  Future<void> _loadNotes() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _notes = [];
+        _loading = false;
+      });
+      return;
+    }
+    final result = await FirebaseService.getNotes(user.uid);
+    setState(() {
+      _notes = result;
+      _notes.sort((a, b) => (b['date'] as DateTime)
+          .compareTo(a['date'] as DateTime)); // newest first
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notes History'),
@@ -19,7 +47,14 @@ class NotesHistoryPage extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       backgroundColor: const Color(0xFFF5E6E8),
-      body: entries.isEmpty
+      body: _loading
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          : _notes.isEmpty
           ? const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
@@ -32,12 +67,12 @@ class NotesHistoryPage extends StatelessWidget {
             )
           : ListView.separated(
               padding: const EdgeInsets.all(16),
-              itemCount: entries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemCount: _notes.length,
+              separatorBuilder: (context, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final entry = entries[index];
-                final date = entry.key;
-                final text = entry.value;
+                final item = _notes[index];
+                final date = item['date'] as DateTime;
+                final text = item['note'] as String? ?? '';
 
                 return Container(
                   decoration: BoxDecoration(
@@ -45,7 +80,7 @@ class NotesHistoryPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),

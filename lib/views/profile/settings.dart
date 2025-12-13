@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../state/user_state.dart';
+import '../../services/firebase_service.dart';
+import '../../models/settings_model.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -16,6 +19,32 @@ class _SettingsPageState extends State<SettingsPage> {
   String _selectedTimeZone = 'Pacific Time (PT)';
   int _cycleLength = 28;
   int _periodLength = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = UserState.currentUser.settings;
+    _allNotifications = s.notificationSettings.allNotifications;
+    _emailNotifications = s.notificationSettings.emailNotifications;
+    _pushNotifications = s.notificationSettings.pushNotifications;
+    _darkMode = s.appPreferences.darkMode;
+    _selectedLanguage = s.appPreferences.language;
+    _selectedTimeZone = s.appPreferences.timeZone;
+    _cycleLength = s.cycleSettings.cycleLength;
+    _periodLength = s.cycleSettings.periodLength;
+  }
+
+  Future<void> _persistSettings(SettingsModel updated) async {
+    final uid = UserState.currentUser.profile.id;
+    UserState.currentUser = UserState.currentUser.copyWith(settings: updated);
+    await FirebaseService.updateUser(uid, {
+      'settings': updated.toJson(),
+      'profile': {
+        // keep profile.cycleLength in sync with settings cycle length
+        'cycleLength': updated.cycleSettings.cycleLength,
+      }
+    });
+  }
 
   final List<String> _languages = [
     'English (US)',
@@ -82,6 +111,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 _pushNotifications = false;
               }
             });
+            final updated = UserState.currentUser.settings.copyWith(
+              notificationSettings: UserState.currentUser.settings.notificationSettings.copyWith(
+                allNotifications: _allNotifications,
+                emailNotifications: _emailNotifications,
+                pushNotifications: _pushNotifications,
+              ),
+            );
+            _persistSettings(updated);
           },
         ),
         const SizedBox(height: 16),
@@ -96,6 +133,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 _allNotifications = true;
               }
             });
+            final updated = UserState.currentUser.settings.copyWith(
+              notificationSettings: UserState.currentUser.settings.notificationSettings.copyWith(
+                allNotifications: _allNotifications,
+                emailNotifications: _emailNotifications,
+              ),
+            );
+            _persistSettings(updated);
           },
         ),
         const SizedBox(height: 16),
@@ -110,6 +154,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 _allNotifications = true;
               }
             });
+            final updated = UserState.currentUser.settings.copyWith(
+              notificationSettings: UserState.currentUser.settings.notificationSettings.copyWith(
+                allNotifications: _allNotifications,
+                pushNotifications: _pushNotifications,
+              ),
+            );
+            _persistSettings(updated);
           },
         ),
       ],
@@ -139,6 +190,12 @@ class _SettingsPageState extends State<SettingsPage> {
             setState(() {
               _cycleLength = value.toInt();
             });
+            final updated = UserState.currentUser.settings.copyWith(
+              cycleSettings: UserState.currentUser.settings.cycleSettings.copyWith(
+                cycleLength: _cycleLength,
+              ),
+            );
+            _persistSettings(updated);
           },
         ),
         const SizedBox(height: 20),
@@ -152,6 +209,12 @@ class _SettingsPageState extends State<SettingsPage> {
             setState(() {
               _periodLength = value.toInt();
             });
+            final updated = UserState.currentUser.settings.copyWith(
+              cycleSettings: UserState.currentUser.settings.cycleSettings.copyWith(
+                periodLength: _periodLength,
+              ),
+            );
+            _persistSettings(updated);
           },
         ),
       ],
@@ -177,18 +240,36 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() {
             _darkMode = value;
           });
+          final updated = UserState.currentUser.settings.copyWith(
+            appPreferences: UserState.currentUser.settings.appPreferences.copyWith(
+              darkMode: _darkMode,
+            ),
+          );
+          _persistSettings(updated);
         }),
         const SizedBox(height: 20),
         _buildDropdownItem('Language', _selectedLanguage, _languages, (value) {
           setState(() {
             _selectedLanguage = value!;
           });
+          final updated = UserState.currentUser.settings.copyWith(
+            appPreferences: UserState.currentUser.settings.appPreferences.copyWith(
+              language: _selectedLanguage,
+            ),
+          );
+          _persistSettings(updated);
         }),
         const SizedBox(height: 20),
         _buildDropdownItem('Time Zone', _selectedTimeZone, _timeZones, (value) {
           setState(() {
             _selectedTimeZone = value!;
           });
+          final updated = UserState.currentUser.settings.copyWith(
+            appPreferences: UserState.currentUser.settings.appPreferences.copyWith(
+              timeZone: _selectedTimeZone,
+            ),
+          );
+          _persistSettings(updated);
         }),
       ],
     );
@@ -233,7 +314,7 @@ class _SettingsPageState extends State<SettingsPage> {
             value: value,
             onChanged: onChanged,
             activeThumbColor: const Color(0xFFD946A6),
-            activeTrackColor: const Color(0xFFD946A6).withOpacity(0.3),
+            activeTrackColor: const Color(0xFFD946A6).withValues(alpha: 0.3),
             inactiveThumbColor: Colors.grey[400],
             inactiveTrackColor: Colors.grey[300],
           ),
@@ -329,7 +410,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD946A6).withOpacity(0.1),
+                  color: const Color(0xFFD946A6).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

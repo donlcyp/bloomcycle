@@ -5,6 +5,8 @@ import '../profile/profile.dart';
 import '../chat/health_chat.dart';
 import '../../models/cycle_history.dart';
 import '../../state/user_state.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -72,43 +74,84 @@ class _NavBarState extends State<NavBar> {
   }
 }
 
-class InsightsPage extends StatelessWidget {
+class InsightsPage extends StatefulWidget {
   const InsightsPage({super.key});
 
   @override
+  State<InsightsPage> createState() => _InsightsPageState();
+}
+
+class _InsightsPageState extends State<InsightsPage> {
+  List<Map<String, dynamic>> _cyclesFromDb = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCycles();
+  }
+
+  Future<void> _loadCycles() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _loading = false);
+      return;
+    }
+    final data = await FirebaseService.getCycles(user.uid);
+    setState(() {
+      _cyclesFromDb = data;
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final avgCycle = CycleHistoryData.averageCycleLength;
-    final avgPeriod = CycleHistoryData.averagePeriodLength;
-    final cycles = CycleHistoryData.recentCycles;
+    final List<Map<String, dynamic>> cyclesDb = _cyclesFromDb;
+    final List<CycleHistoryEntry> cyclesStatic = CycleHistoryData.recentCycles;
+    final bool usingDb = cyclesDb.isNotEmpty;
+    final avgCycle = usingDb
+        ? _avg(cyclesDb.map((c) => (c['cycleLength'] ?? 0) as int).toList())
+        : CycleHistoryData.averageCycleLength;
+    final avgPeriod = usingDb
+        ? _avg(cyclesDb.map((c) => (c['periodLength'] ?? 0) as int).toList())
+        : CycleHistoryData.averagePeriodLength;
+    final cyclesCount = usingDb ? cyclesDb.length : cyclesStatic.length;
 
     final dob = UserState.dateOfBirth;
     final weightKg = UserState.weightKg;
 
     int? minCycle;
     int? maxCycle;
-    if (cycles.isNotEmpty) {
-      int currentMin = cycles.first.cycleLengthDays;
-      int currentMax = cycles.first.cycleLengthDays;
-      for (final c in cycles) {
-        if (c.cycleLengthDays < currentMin) {
-          currentMin = c.cycleLengthDays;
-        }
-        if (c.cycleLengthDays > currentMax) {
-          currentMax = c.cycleLengthDays;
-        }
+    if (usingDb && cyclesDb.isNotEmpty) {
+      final lengths = cyclesDb
+          .map((c) => (c['cycleLength'] ?? 0) as int)
+          .where((v) => v > 0)
+          .toList();
+      if (lengths.isNotEmpty) {
+        minCycle = lengths.reduce((a, b) => a < b ? a : b);
+        maxCycle = lengths.reduce((a, b) => a > b ? a : b);
+      }
+    } else if (!usingDb && cyclesStatic.isNotEmpty) {
+      int currentMin = cyclesStatic.first.cycleLengthDays;
+      int currentMax = cyclesStatic.first.cycleLengthDays;
+      for (final c in cyclesStatic) {
+        if (c.cycleLengthDays < currentMin) currentMin = c.cycleLengthDays;
+        if (c.cycleLengthDays > currentMax) currentMax = c.cycleLengthDays;
       }
       minCycle = currentMin;
       maxCycle = currentMax;
     }
 
-    String formatDate(DateTime date) {
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    }
+  String formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
       body: SafeArea(
-        child: Column(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
           children: [
             // Top header bar
             Container(
@@ -164,7 +207,7 @@ class InsightsPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.06),
+                                color: Colors.black.withValues(alpha: 0.06),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -234,7 +277,7 @@ class InsightsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withValues(alpha: 0.08),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -347,7 +390,7 @@ class InsightsPage extends StatelessWidget {
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 12),
-                      if (cycles.isEmpty)
+                      if (cyclesCount == 0)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: const [
@@ -370,7 +413,7 @@ class InsightsPage extends StatelessWidget {
                         )
                       else
                         Column(
-                          children: cycles.map((cycle) {
+                          children: (usingDb ? cyclesDb : cyclesStatic).map((cycle) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               decoration: BoxDecoration(
@@ -378,7 +421,7 @@ class InsightsPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
@@ -393,7 +436,9 @@ class InsightsPage extends StatelessWidget {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Cycle starting ${formatDate(cycle.startDate)}',
+                                        usingDb
+                                            ? 'Cycle starting ${formatDate((cycle as Map<String, dynamic>)['cycleStart'] as DateTime)}'
+                                            : 'Cycle starting ${formatDate((cycle as CycleHistoryEntry).startDate)}',
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -412,7 +457,9 @@ class InsightsPage extends StatelessWidget {
                                           ),
                                         ),
                                         child: Text(
-                                          '${cycle.cycleLengthDays} days',
+                                          usingDb
+                                              ? '${(((cycle as Map<String, dynamic>)['cycleLength'] ?? 0) as int)} days'
+                                              : '${(cycle as CycleHistoryEntry).cycleLengthDays} days',
                                           style: const TextStyle(
                                             fontSize: 11,
                                             color: Color(0xFFD946A6),
@@ -423,7 +470,9 @@ class InsightsPage extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Cycle length: ${cycle.cycleLengthDays} days',
+                                    usingDb
+                                        ? 'Cycle length: ${(((cycle as Map<String, dynamic>)['cycleLength'] ?? 0) as int)} days'
+                                        : 'Cycle length: ${(cycle as CycleHistoryEntry).cycleLengthDays} days',
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: Colors.black87,
@@ -442,7 +491,7 @@ class InsightsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withValues(alpha: 0.08),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -529,5 +578,12 @@ class InsightsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  int _avg(List<int> values) {
+    final filtered = values.where((v) => v > 0).toList();
+    if (filtered.isEmpty) return 0;
+    final sum = filtered.fold(0, (a, b) => a + b);
+    return (sum / filtered.length).round();
   }
 }

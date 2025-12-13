@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
+import '../../models/settings_model.dart';
 import 'healthdata.dart';
 import 'settings.dart';
 import 'privacy.dart';
 import '../../auth/login.dart';
 import '../../state/user_state.dart';
+import '../../services/cloudinary_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,17 +20,61 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isUploading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _loadProfile();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    await FirebaseService.initialize();
+    final authUser = FirebaseAuth.instance.currentUser;
+    final uid = authUser?.uid.isNotEmpty == true
+        ? authUser!.uid
+        : UserState.currentUser.profile.id;
+    final data = await FirebaseService.getUser(uid);
+    if (!mounted) return;
+    if (data != null) {
+      final profileJson = Map<String, dynamic>.from(data['profile'] ?? {});
+      profileJson['id'] = uid;
+      final ms = profileJson['memberSince'];
+      if (ms is DateTime) {
+        profileJson['memberSince'] = ms.toIso8601String();
+      }
+      final payload = {
+        'profile': profileJson,
+        'healthData': Map<String, dynamic>.from(data['healthData'] ?? {}),
+        'settings': Map<String, dynamic>.from(data['settings'] ?? {}),
+        'privacy': Map<String, dynamic>.from(data['privacy'] ?? {}),
+      };
+      UserState.currentUser = UserState.currentUser.copyWith(
+        profile: UserState.currentUser.profile.copyWith(
+          id: uid,
+          firstName: profileJson['firstName'] ?? UserState.currentUser.profile.firstName,
+          lastName: profileJson['lastName'] ?? UserState.currentUser.profile.lastName,
+          email: profileJson['email'] ?? UserState.currentUser.profile.email,
+          phoneNumber: profileJson['phoneNumber'] ?? UserState.currentUser.profile.phoneNumber,
+          location: profileJson['location'] ?? UserState.currentUser.profile.location,
+          bio: profileJson['bio'] ?? UserState.currentUser.profile.bio,
+          avatarUrl: profileJson['avatarUrl'] ?? UserState.currentUser.profile.avatarUrl,
+          memberSince: DateTime.tryParse(
+                  profileJson['memberSince'] ?? DateTime.now().toIso8601String()) ??
+              UserState.currentUser.profile.memberSince,
+          cycleLength: profileJson['cycleLength'] ?? UserState.currentUser.profile.cycleLength,
+        ),
+        settings: SettingsModel.fromJson(payload['settings'] as Map<String, dynamic>),
+      );
+      setState(() {});
+    }
   }
 
   @override
@@ -51,39 +100,39 @@ class _ProfilePageState extends State<ProfilePage>
                     const SizedBox(height: 10),
                     // Profile Avatar
                     GestureDetector(
-                      onTap: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(20),
-                            ),
-                          ),
-                          builder: (context) {
-                            return Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text(
-                                    'Change profile photo',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12),
-                                  Text(
-                                    'Photo upload is coming soon. For now this is a placeholder.',
-                                    style: TextStyle(fontSize: 13),
-                                  ),
-                                  SizedBox(height: 8),
-                                ],
-                              ),
-                            );
-                          },
+                      onTap: () async {
+                        final picker = ImagePicker();
+                        final picked =
+                            await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+                        if (picked == null) return;
+                        if (!mounted) return;
+                        setState(() {
+                          _isUploading = true;
+                        });
+                        final bytes = await picked.readAsBytes();
+                        final service = CloudinaryService();
+                        final url = await service.uploadImageBytes(
+                          bytes,
+                          filename: picked.name,
                         );
+                        if (url != null && url.isNotEmpty) {
+                          final updatedProfile = UserState.currentUser.profile
+                              .copyWith(avatarUrl: url);
+                          UserState.currentUser = UserState.currentUser
+                              .copyWith(profile: updatedProfile);
+                          final uid = UserState.currentUser.profile.id;
+                          await FirebaseService.updateUser(uid, {
+                            'profile': {'avatarUrl': url}
+                          });
+                          if (mounted) {
+                            setState(() {});
+                          }
+                        }
+                        if (mounted) {
+                          setState(() {
+                            _isUploading = false;
+                          });
+                        }
                       },
                       child: Stack(
                         children: [
@@ -95,15 +144,62 @@ class _ProfilePageState extends State<ProfilePage>
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
                             ),
-                            child: const Center(
-                              child: Text(
-                                'JD',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFD946A6),
-                                ),
-                              ),
+                            child: Builder(
+                              builder: (context) {
+                                final avatarUrl =
+                                    UserState.currentUser.profile.avatarUrl;
+                                if (avatarUrl.isNotEmpty) {
+                                  return ClipOval(
+                                    child: Image.network(
+                                      avatarUrl,
+                                      fit: BoxFit.cover,
+                                      width: 80,
+                                      height: 80,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(
+                                          child: SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                Color(0xFFD946A6),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        final initials =
+                                            UserState.currentUser.profile.initials;
+                                        return Center(
+                                          child: Text(
+                                            initials.isNotEmpty ? initials : 'JD',
+                                            style: const TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFD946A6),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                }
+                                final initials =
+                                    UserState.currentUser.profile.initials;
+                                return Center(
+                                  child: Text(
+                                    initials.isNotEmpty ? initials : 'JD',
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFD946A6),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           Positioned(
@@ -127,14 +223,37 @@ class _ProfilePageState extends State<ProfilePage>
                               ),
                             ),
                           ),
+                          if (_isUploading)
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFFD946A6),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     // Name
-                    const Text(
-                      'Jessica Davis',
-                      style: TextStyle(
+                    Text(
+                      UserState.currentUser.profile.fullName.isNotEmpty
+                          ? UserState.currentUser.profile.fullName
+                          : '—',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -142,9 +261,11 @@ class _ProfilePageState extends State<ProfilePage>
                     ),
                     const SizedBox(height: 4),
                     // Location
-                    const Text(
-                      'San Francisco, CA',
-                      style: TextStyle(fontSize: 16, color: Colors.white70),
+                    Text(
+                      UserState.currentUser.profile.location.isNotEmpty
+                          ? UserState.currentUser.profile.location
+                          : '—',
+                      style: const TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                     const SizedBox(height: 20),
                     // Member Info Row
@@ -152,18 +273,18 @@ class _ProfilePageState extends State<ProfilePage>
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         Column(
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'Member since',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'March 2023',
-                              style: TextStyle(
+                              '${UserState.currentUser.profile.memberSince.month == 1 ? 'January' : UserState.currentUser.profile.memberSince.month == 2 ? 'February' : UserState.currentUser.profile.memberSince.month == 3 ? 'March' : UserState.currentUser.profile.memberSince.month == 4 ? 'April' : UserState.currentUser.profile.memberSince.month == 5 ? 'May' : UserState.currentUser.profile.memberSince.month == 6 ? 'June' : UserState.currentUser.profile.memberSince.month == 7 ? 'July' : UserState.currentUser.profile.memberSince.month == 8 ? 'August' : UserState.currentUser.profile.memberSince.month == 9 ? 'September' : UserState.currentUser.profile.memberSince.month == 10 ? 'October' : UserState.currentUser.profile.memberSince.month == 11 ? 'November' : 'December'} ${UserState.currentUser.profile.memberSince.year}',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -172,18 +293,18 @@ class _ProfilePageState extends State<ProfilePage>
                           ],
                         ),
                         Column(
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'Cycle Length',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              '28 days',
-                              style: TextStyle(
+                              '${UserState.currentUser.profile.cycleLength} days',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -282,13 +403,13 @@ class _ProfilePageState extends State<ProfilePage>
             ),
           ),
           const SizedBox(height: 24),
-          _buildInfoField('Full Name', 'Jessica Davis'),
+          _buildInfoField('Full Name', UserState.currentUser.profile.fullName),
           const SizedBox(height: 20),
-          _buildInfoField('Email Address', 'jessica.davis@email.com'),
+          _buildInfoField('Email Address', UserState.currentUser.profile.email),
           const SizedBox(height: 20),
-          _buildInfoField('Phone Number', '+1 (555) 123-4567'),
+          _buildInfoField('Phone Number', UserState.currentUser.profile.phoneNumber.isNotEmpty ? UserState.currentUser.profile.phoneNumber : '—'),
           const SizedBox(height: 20),
-          _buildInfoField('Location', 'San Francisco, CA'),
+          _buildInfoField('Location', UserState.currentUser.profile.location.isNotEmpty ? UserState.currentUser.profile.location : '—'),
           const SizedBox(height: 32),
           const Text(
             'About',
@@ -333,8 +454,59 @@ class _ProfilePageState extends State<ProfilePage>
                 style: const TextStyle(fontSize: 16, color: Colors.black87),
               ),
               GestureDetector(
-                onTap: () {
-                  // Handle edit action
+                onTap: () async {
+                  final newValue = await _promptTextEdit(
+                    title: 'Edit $label',
+                    initial: value == '—' ? '' : value,
+                    maxLines: 1,
+                  );
+                  if (newValue == null) return;
+                  final uid = UserState.currentUser.profile.id;
+                  if (label == 'Full Name') {
+                    final parts = newValue.trim().split(RegExp(r'\\s+'));
+                    final first = parts.isNotEmpty ? parts.first : '';
+                    final last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+                    final updated = UserState.currentUser.profile.copyWith(
+                      firstName: first,
+                      lastName: last,
+                    );
+                    UserState.currentUser =
+                        UserState.currentUser.copyWith(profile: updated);
+                    await FirebaseService.updateUser(uid, {
+                      'profile': {
+                        'firstName': first,
+                        'lastName': last,
+                      }
+                    });
+                  } else if (label == 'Email Address') {
+                    final updated = UserState.currentUser.profile.copyWith(
+                      email: newValue.trim(),
+                    );
+                    UserState.currentUser =
+                        UserState.currentUser.copyWith(profile: updated);
+                    await FirebaseService.updateUser(uid, {
+                      'profile': {'email': newValue.trim()}
+                    });
+                  } else if (label == 'Phone Number') {
+                    final updated = UserState.currentUser.profile.copyWith(
+                      phoneNumber: newValue.trim(),
+                    );
+                    UserState.currentUser =
+                        UserState.currentUser.copyWith(profile: updated);
+                    await FirebaseService.updateUser(uid, {
+                      'profile': {'phoneNumber': newValue.trim()}
+                    });
+                  } else if (label == 'Location') {
+                    final updated = UserState.currentUser.profile.copyWith(
+                      location: newValue.trim(),
+                    );
+                    UserState.currentUser =
+                        UserState.currentUser.copyWith(profile: updated);
+                    await FirebaseService.updateUser(uid, {
+                      'profile': {'location': newValue.trim()}
+                    });
+                  }
+                  setState(() {});
                 },
                 child: const Text(
                   'Edit',
@@ -375,9 +547,11 @@ class _ProfilePageState extends State<ProfilePage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Health enthusiast passionate about wellness and mindful living. Love tracking my fitness journey and sharing tips with the community.',
-                style: TextStyle(
+              Text(
+                UserState.currentUser.profile.bio.isNotEmpty
+                    ? UserState.currentUser.profile.bio
+                    : '—',
+                style: const TextStyle(
                   fontSize: 16,
                   color: Colors.black87,
                   height: 1.4,
@@ -385,8 +559,24 @@ class _ProfilePageState extends State<ProfilePage>
               ),
               const SizedBox(height: 12),
               GestureDetector(
-                onTap: () {
-                  // Handle edit bio action
+                onTap: () async {
+                  final initial = UserState.currentUser.profile.bio;
+                  final newValue = await _promptTextEdit(
+                    title: 'Edit Bio',
+                    initial: initial,
+                    maxLines: 5,
+                  );
+                  if (newValue == null) return;
+                  final uid = UserState.currentUser.profile.id;
+                  final updated = UserState.currentUser.profile.copyWith(
+                    bio: newValue.trim(),
+                  );
+                  UserState.currentUser =
+                      UserState.currentUser.copyWith(profile: updated);
+                  await FirebaseService.updateUser(uid, {
+                    'profile': {'bio': newValue.trim()}
+                  });
+                  setState(() {});
                 },
                 child: const Text(
                   'Edit Bio',
@@ -401,6 +591,37 @@ class _ProfilePageState extends State<ProfilePage>
           ),
         ),
       ],
+    );
+  }
+
+  Future<String?> _promptTextEdit({
+    required String title,
+    required String initial,
+    int maxLines = 1,
+  }) async {
+    final controller = TextEditingController(text: initial);
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            maxLines: maxLines,
+            decoration: const InputDecoration(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(controller.text),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 

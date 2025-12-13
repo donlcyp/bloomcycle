@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../main.dart';
 import 'step2.dart';
 import '../../state/user_state.dart';
 
@@ -43,7 +44,7 @@ class _SetupStep1State extends State<SetupStep1> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -291,15 +292,14 @@ class _SetupStep1State extends State<SetupStep1> {
                                     }
                                   } catch (_) {}
 
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  appScaffoldMessengerKey.currentState?.showSnackBar(
                                     const SnackBar(
                                       content: Text('Birth date saved.'),
                                     ),
                                   );
 
                                   // Navigate to step 2
-                                  Navigator.push(
-                                    context,
+                                  appNavigatorKey.currentState?.push(
                                     MaterialPageRoute(
                                       builder: (context) => const SetupStep2(),
                                     ),

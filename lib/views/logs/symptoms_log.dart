@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/calendar_data.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
 
 class SymptomsLogPage extends StatefulWidget {
   const SymptomsLogPage({super.key});
@@ -107,12 +108,25 @@ class _SymptomsLogPageState extends State<SymptomsLogPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {
-                  CalendarData.logSymptomsForDate(DateTime.now());
-                  ScaffoldMessenger.of(context).showSnackBar(
+                onPressed: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please sign in first.')),
+                    );
+                    return;
+                  }
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  await FirebaseService.logSymptom(
+                    user.uid,
+                    DateTime.now(),
+                    _selectedSymptoms.toList(),
+                  );
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Symptoms saved for today.')),
                   );
-                  Navigator.pop(context);
+                  navigator.pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD946A6),

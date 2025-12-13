@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/calendar_data.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/firebase_service.dart';
 
 class NotesLogPage extends StatefulWidget {
   const NotesLogPage({super.key});
@@ -69,15 +70,25 @@ class _NotesLogPageState extends State<NotesLogPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {
-                  CalendarData.logNoteForDate(
+                onPressed: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please sign in first.')),
+                    );
+                    return;
+                  }
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  await FirebaseService.saveNote(
+                    user.uid,
                     DateTime.now(),
                     _notesController.text.trim(),
                   );
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Note saved for today.')),
                   );
-                  Navigator.pop(context);
+                  navigator.pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD946A6),

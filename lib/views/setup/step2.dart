@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'step3.dart';
 import '../../models/cycle_history.dart';
+import '../../main.dart';
 
 class SetupStep2 extends StatefulWidget {
   const SetupStep2({super.key});
@@ -171,9 +172,9 @@ class _SetupStep2State extends State<SetupStep2> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                  boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -428,9 +429,8 @@ class _SetupStep2State extends State<SetupStep2> {
                                           }
                                         } catch (_) {}
 
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
+                                        appScaffoldMessengerKey.currentState
+                                            ?.showSnackBar(
                                           const SnackBar(
                                             content: Text(
                                               'Cycle start date saved.',
@@ -438,8 +438,7 @@ class _SetupStep2State extends State<SetupStep2> {
                                           ),
                                         );
 
-                                        Navigator.push(
-                                          context,
+                                        appNavigatorKey.currentState?.push(
                                           MaterialPageRoute(
                                             builder: (context) =>
                                                 const SetupStep3(),

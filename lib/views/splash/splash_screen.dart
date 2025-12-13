@@ -158,7 +158,7 @@ class _SplashScreenState extends State<SplashScreen>
                               boxShadow: [
                                 BoxShadow(
                                   color: const Color(0xFFD946A6)
-                                      .withOpacity(0.3),
+                                      .withValues(alpha: 0.3),
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                 ),
@@ -184,7 +184,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 height: screenWidth * 0.25,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFD946A6)
-                                      .withOpacity(0.2),
+                                      .withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                               ),
                               ),
@@ -198,8 +198,8 @@ class _SplashScreenState extends State<SplashScreen>
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFD946A6)
-                                        .withOpacity(0.4),
+                                  color: const Color(0xFFD946A6)
+                                        .withValues(alpha: 0.4),
                                     blurRadius: 20,
                                     spreadRadius: 5,
                                   ),
@@ -236,7 +236,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFFD946A6)
-                                        .withOpacity(0.2),
+                                        .withValues(alpha: 0.2),
                                     blurRadius: 15,
                                     spreadRadius: 3,
                                   ),

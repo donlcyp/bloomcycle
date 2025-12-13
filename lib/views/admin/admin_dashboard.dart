@@ -10,11 +10,7 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedTab = 0;
 
-  final List<String> _tabs = [
-    'Overview',
-    'Users',
-    'Analytics',
-  ];
+  final List<String> _tabs = ['Overview', 'Users', 'Analytics'];
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +29,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               color: const Color(0xFFD946A6),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.admin_panel_settings,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.admin_panel_settings, color: Colors.white),
           ),
         ),
         title: Column(
@@ -52,10 +45,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             Text(
               'System Overview & Management',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -132,7 +122,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   horizontal: screenWidth * 0.04,
                   vertical: screenHeight * 0.02,
                 ),
-                child: _buildTabContent(_selectedTab, screenWidth, screenHeight),
+                child: _buildTabContent(
+                  _selectedTab,
+                  screenWidth,
+                  screenHeight,
+                ),
               ),
             ),
           ),
@@ -141,7 +135,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildTabContent(int tabIndex, double screenWidth, double screenHeight) {
+  Widget _buildTabContent(
+    int tabIndex,
+    double screenWidth,
+    double screenHeight,
+  ) {
     switch (tabIndex) {
       case 0:
         return _buildOverviewTab(screenWidth, screenHeight);
@@ -179,19 +177,49 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Status: Healthy', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  Text('Uptime: 99.8%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  Text('Response: Good', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  Text(
+                    'Status: Healthy',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
+                  Text(
+                    'Uptime: 99.8%',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Response: Good',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
                 ],
               ),
               SizedBox(height: screenHeight * 0.02),
               Row(
                 children: [
-                  Expanded(child: _buildMetricBox('1,245', 'Active\nUsers', const Color(0xFFFF6B6B), screenHeight)),
+                  Expanded(
+                    child: _buildMetricBox(
+                      '1,245',
+                      'Active\nUsers',
+                      const Color(0xFFFF6B6B),
+                      screenHeight,
+                    ),
+                  ),
                   SizedBox(width: screenWidth * 0.03),
-                  Expanded(child: _buildMetricBox('892', 'Data\nRecords', const Color(0xFF4DABF7), screenHeight)),
+                  Expanded(
+                    child: _buildMetricBox(
+                      '892',
+                      'Data\nRecords',
+                      const Color(0xFF4DABF7),
+                      screenHeight,
+                    ),
+                  ),
                   SizedBox(width: screenWidth * 0.03),
-                  Expanded(child: _buildMetricBox('98.5%', 'System\nHealth', const Color(0xFF10B981), screenHeight)),
+                  Expanded(
+                    child: _buildMetricBox(
+                      '98.5%',
+                      'System\nHealth',
+                      const Color(0xFF10B981),
+                      screenHeight,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -236,13 +264,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
           subtitle: 'Quick actions',
           child: Column(
             children: [
-              _buildActionButton('View All Users', Icons.people, Colors.blue, screenWidth),
+              _buildActionButton(
+                'View All Users',
+                Icons.people,
+                Colors.blue,
+                screenWidth,
+              ),
               SizedBox(height: screenHeight * 0.01),
-              _buildActionButton('Send Announcement', Icons.announcement, Colors.orange, screenWidth),
+              _buildActionButton(
+                'Send Announcement',
+                Icons.announcement,
+                Colors.orange,
+                screenWidth,
+              ),
               SizedBox(height: screenHeight * 0.01),
-              _buildActionButton('Export User Data', Icons.download, Colors.green, screenWidth),
+              _buildActionButton(
+                'Export User Data',
+                Icons.download,
+                Colors.green,
+                screenWidth,
+              ),
               SizedBox(height: screenHeight * 0.01),
-              _buildActionButton('Ban User', Icons.block, Colors.red, screenWidth),
+              _buildActionButton(
+                'Ban User',
+                Icons.block,
+                Colors.red,
+                screenWidth,
+              ),
             ],
           ),
           screenHeight: screenHeight,
@@ -314,10 +362,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           SizedBox(height: screenHeight * 0.015),
           child,
@@ -326,7 +371,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildMetricBox(String value, String label, Color color, double screenHeight) {
+  Widget _buildMetricBox(
+    String value,
+    String label,
+    Color color,
+    double screenHeight,
+  ) {
     return Container(
       height: 100,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -340,7 +390,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           Text(
             value,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           SizedBox(height: 6),
           Text(
@@ -365,19 +419,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             SizedBox(width: 12),
-            Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
+            ),
           ],
         ),
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildRecentUsersCard(double screenWidth, double screenHeight) {
     final recentUsers = [
-      {'name': 'Sarah Johnson', 'email': 'sarah@example.com', 'joined': '2 hours ago'},
-      {'name': 'Emily Chen', 'email': 'emily@example.com', 'joined': '5 hours ago'},
-      {'name': 'Alex Martinez', 'email': 'alex@example.com', 'joined': '1 day ago'},
+      {
+        'name': 'Sarah Johnson',
+        'email': 'sarah@example.com',
+        'joined': '2 hours ago',
+      },
+      {
+        'name': 'Emily Chen',
+        'email': 'emily@example.com',
+        'joined': '5 hours ago',
+      },
+      {
+        'name': 'Alex Martinez',
+        'email': 'alex@example.com',
+        'joined': '1 day ago',
+      },
     ];
 
     return _buildCard(
@@ -396,11 +472,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(color: Color(0xFFD946A6), shape: BoxShape.circle),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFD946A6),
+                      shape: BoxShape.circle,
+                    ),
                     child: Center(
                       child: Text(
                         user['name']![0],
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -409,12 +491,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user['name']!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        Text(user['email']!, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                        Text(
+                          user['name']!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          user['email']!,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  Text(user['joined']!, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  Text(
+                    user['joined']!,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
                 ],
               ),
               if (index < recentUsers.length - 1)
@@ -454,12 +551,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Container(
                     width: 36,
                     height: 36,
-                    decoration: const BoxDecoration(color: Color(0xFFD946A6), shape: BoxShape.circle),
-                    child: const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFD946A6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                   SizedBox(width: screenWidth * 0.04),
-                  Expanded(child: Text(activity['action']!, style: const TextStyle(fontSize: 12, color: Colors.black87))),
-                  Text(activity['time']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Expanded(
+                    child: Text(
+                      activity['action']!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    activity['time']!,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
                 ],
               ),
               if (index < activities.length - 1)
@@ -475,7 +590,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, Color color, double screenWidth) {
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    Color color,
+    double screenWidth,
+  ) {
     return InkWell(
       onTap: () {},
       child: Container(
@@ -489,7 +609,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Icon(icon, color: color, size: 18),
             SizedBox(width: screenWidth * 0.03),
-            Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const Spacer(),
             Icon(Icons.arrow_forward_ios, color: color, size: 14),
           ],
@@ -498,10 +625,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildChartBar(String label, int value, int maxValue, Color color, double screenWidth) {
+  Widget _buildChartBar(
+    String label,
+    int value,
+    int maxValue,
+    Color color,
+    double screenWidth,
+  ) {
     return Row(
       children: [
-        SizedBox(width: 30, child: Text(label, style: const TextStyle(fontSize: 10))),
+        SizedBox(
+          width: 30,
+          child: Text(label, style: const TextStyle(fontSize: 10)),
+        ),
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -514,7 +650,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
         SizedBox(width: 12),
-        Text(value.toString(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(
+          value.toString(),
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }

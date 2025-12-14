@@ -6,6 +6,7 @@ import '../../services/firebase_service.dart';
 import '../logs/symptoms_log.dart';
 import '../logs/notes_log.dart';
 import '../logs/notes_history.dart';
+import '../../state/user_state.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -31,8 +32,11 @@ class _CalendarPageState extends State<CalendarPage> {
     });
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      final settings = UserState.currentUser.settings.cycleSettings;
       FirebaseService.saveCycleData(user.uid, {
         'cycleStart': cycleStartDate!,
+        'cycleLength': settings.cycleLength,
+        'periodLength': settings.periodLength,
       });
     }
   }

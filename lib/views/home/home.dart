@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/home_data.dart';
 import '../../services/firebase_service.dart';
 import '../../state/user_state.dart';
-import '../../models/home_data.dart';
 import '../chat/health_chat.dart';
-import '../logs/symptoms_log.dart';
 import '../logs/mood_log.dart';
 import '../logs/notes_log.dart';
+import '../logs/symptoms_log.dart';
+import '../../theme/design_system.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,14 +29,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadCycle() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      setState(() {
-        _loadingCycle = false;
-      });
+      setState(() => _loadingCycle = false);
       return;
     }
+
     final latest = await FirebaseService.getCycleData(user.uid);
     final cycleStart = latest?['cycleStart'] as DateTime?;
     final cycleLength = UserState.currentUser.profile.cycleLength;
+
     if (cycleStart == null) {
       setState(() {
         _loadingCycle = false;
@@ -43,15 +44,19 @@ class _HomePageState extends State<HomePage> {
       });
       return;
     }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+
+    final today = DateTime.now();
     final start = DateTime(cycleStart.year, cycleStart.month, cycleStart.day);
-    final daysFromStart = today.difference(start).inDays;
-    final currentDayRaw = daysFromStart + 1;
-    final currentDay = currentDayRaw.clamp(1, cycleLength);
+    final daysFromStart = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).difference(start).inDays;
+    final currentDay = (daysFromStart + 1).clamp(1, cycleLength);
     final daysLeft = (cycleLength - currentDay).clamp(0, cycleLength);
     final phase = _phaseForDay(currentDay);
     final progress = (currentDay / cycleLength).clamp(0.0, 1.0);
+
     setState(() {
       _cycleData = CycleData(
         currentDay: currentDay,
@@ -66,11 +71,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _phaseForDay(int currentDay) {
-    if (currentDay >= 1 && currentDay <= 5) {
+    if (currentDay <= 5) {
       return 'Menstruation';
-    } else if (currentDay >= 6 && currentDay <= 13) {
+    } else if (currentDay <= 13) {
       return 'Follicular';
-    } else if (currentDay >= 14 && currentDay <= 15) {
+    } else if (currentDay <= 15) {
       return 'Ovulation';
     } else {
       return 'Luteal';
@@ -79,263 +84,249 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
+    final media = MediaQuery.of(context);
+    final theme = Theme.of(context);
+    final isLarge = media.size.width >= AppBreakpoints.tablet;
+    final horizontalPadding = isLarge ? media.size.width * 0.08 : 24.0;
+    final verticalSpacing = isLarge ? 28.0 : 20.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5E6E8),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.08,
-            vertical: screenHeight * 0.02,
-          ),
-          child: Column(
-            children: [
-              // Header Section
-              _buildHeader(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
-              // Cycle Overview Section
-              _buildCycleOverview(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
-              // Quick Actions Section
-              _buildQuickActions(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
-              // Today's Insights Section
-              _buildTodaysInsights(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
-              // Today's Tip Section
-              _buildTodaysTip(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
-              // Health Tips Section
-              _buildHealthTips(screenWidth, screenHeight),
-              SizedBox(height: screenHeight * 0.03),
-            ],
-          ),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const HealthChatPage()),
           );
         },
-        backgroundColor: const Color(0xFFD946A6),
+        backgroundColor: AppColors.primary,
         icon: const Icon(Icons.chat_bubble_outline),
         label: const Text('Health tips'),
+      ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+          ),
+          _buildGlow(
+            alignment: const Alignment(-1.1, -0.9),
+            size: media.size.width * 0.7,
+            color: AppColors.secondary,
+            opacity: 0.22,
+          ),
+          _buildGlow(
+            alignment: const Alignment(1.05, -0.1),
+            size: media.size.width * 0.8,
+            color: AppColors.tertiary,
+            opacity: 0.18,
+          ),
+          _buildGlow(
+            alignment: const Alignment(-0.2, 1.1),
+            size: media.size.width * 0.6,
+            color: Colors.white,
+            opacity: 0.16,
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalSpacing,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(theme, isLarge),
+                  SizedBox(height: verticalSpacing),
+                  _buildCycleOverview(theme, media),
+                  SizedBox(height: verticalSpacing),
+                  _buildQuickActions(theme, media),
+                  SizedBox(height: verticalSpacing),
+                  _buildTodaysInsights(theme, media),
+                  SizedBox(height: verticalSpacing),
+                  _buildTodaysTip(theme, media),
+                  SizedBox(height: verticalSpacing),
+                  _buildHealthTips(theme, media),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader(double screenWidth, double screenHeight) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+  Widget _buildHeader(ThemeData theme, bool isLarge) {
+    return GlassPanel(
+      padding: EdgeInsets.symmetric(
+        horizontal: isLarge ? 32 : 24,
+        vertical: isLarge ? 28 : 22,
       ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Welcome Back',
-                style: TextStyle(
-                  fontSize: screenWidth > 600 ? 24 : 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                'Welcome back, ${UserState.currentUser.profile.firstName}',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+              const SizedBox(height: 6),
               Text(
-                'Track your cycle with ease',
-                style: TextStyle(
-                  fontSize: screenWidth > 600 ? 12 : 11,
-                  color: Colors.grey,
+                'Here’s your personalised health overview for today',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
           ),
           Container(
-            width: 50,
-            height: 50,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD946A6),
+            width: isLarge ? 60 : 52,
+            height: isLarge ? 60 : 52,
+            decoration: BoxDecoration(
+              gradient: AppColors.glassGradient(0.28),
               shape: BoxShape.circle,
+              boxShadow: AppShadows.soft(
+                color: AppColors.primary.withOpacity(0.32),
+                blur: 26,
+              ),
             ),
-            child: const Icon(
-              Icons.favorite,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: const Icon(Icons.favorite, color: Colors.white, size: 26),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCycleOverview(double screenWidth, double screenHeight) {
+  Widget _buildCycleOverview(ThemeData theme, MediaQueryData media) {
+    final spacing = media.size.height * 0.02;
+    final isLarge = media.size.width >= AppBreakpoints.tablet;
+    final data = _cycleData;
+
     if (_loadingCycle) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      return GlassPanel(
+        padding: EdgeInsets.symmetric(
+          horizontal: isLarge ? 32 : 24,
+          vertical: isLarge ? 28 : 22,
         ),
-        padding: EdgeInsets.all(screenWidth * 0.05),
         child: SizedBox(
-          height: 80,
+          height: 120,
           child: Center(
             child: SizedBox(
-              width: 24,
-              height: 24,
-              child: const CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD946A6)),
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.6,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             ),
           ),
         ),
       );
     }
-    final data = _cycleData;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return GlassPanel(
+      padding: EdgeInsets.symmetric(
+        horizontal: isLarge ? 32 : 24,
+        vertical: isLarge ? 30 : 24,
       ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Cycle Overview',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
           ),
           if (data != null)
             Text(
               'Current cycle: ${data.totalCycleDays} days',
-              style: TextStyle(
-                fontSize: screenWidth > 600 ? 12 : 11,
-                color: Colors.grey,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textMuted,
               ),
             )
           else
             Text(
               'No cycle data yet. Mark your cycle start in Calendar.',
-              style: TextStyle(
-                fontSize: screenWidth > 600 ? 12 : 11,
-                color: Colors.grey,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textMuted,
               ),
             ),
-          SizedBox(height: screenHeight * 0.02),
-          // Progress Bar with Timeline
+          SizedBox(height: spacing),
           Column(
             children: [
-              if (data != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: data.cycleProgress,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFFD946A6),
-                    ),
-                  ),
-                )
-              else
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: 0,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFFD946A6),
-                    ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: data?.cycleProgress ?? 0,
+                  minHeight: 8,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFFD946A6),
                   ),
                 ),
-              SizedBox(height: screenHeight * 0.015),
-              // Timeline labels
+              ),
+              SizedBox(height: spacing * 0.75),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Day 1',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                  Text(
-                    'Day ${data != null ? data.currentDay : 1} (Today)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textMuted,
                     ),
                   ),
                   Text(
-                    'Day ${data != null ? data.totalCycleDays : 28}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    'Day ${data?.currentDay ?? 1} (Today)',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Day ${data?.totalCycleDays ?? 28}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-          SizedBox(height: screenHeight * 0.02),
-          // Cycle Info Boxes
+          SizedBox(height: spacing),
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: _buildCycleInfoBoxNew(
-                    '${data != null ? data.currentDay : 1}',
+                  child: _buildCycleInfoBox(
+                    theme,
+                    '${data?.currentDay ?? 1}',
                     'Current\nDay',
                     const Color(0xFFFF6B6B),
-                    screenHeight,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.03),
+                SizedBox(width: media.size.width * 0.03),
                 Expanded(
-                  child: _buildCycleInfoBoxNew(
-                    '${data != null ? data.daysLeft : 27}',
+                  child: _buildCycleInfoBox(
+                    theme,
+                    '${data?.daysLeft ?? 27}',
                     'Days to\nPeriod',
                     const Color(0xFF4DABF7),
-                    screenHeight,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.03),
+                SizedBox(width: media.size.width * 0.03),
                 Expanded(
-                  child: _buildCycleInfoBoxNew(
-                    data != null ? data.currentPhase : 'Follicular',
+                  child: _buildCycleInfoBox(
+                    theme,
+                    data?.currentPhase ?? 'Follicular',
                     'Current\nPhase',
                     const Color(0xFF51CF66),
-                    screenHeight,
                   ),
                 ),
               ],
@@ -346,19 +337,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCycleInfoBoxNew(
+  Widget _buildCycleInfoBox(
+    ThemeData theme,
     String title,
     String subtitle,
     Color color,
-    double screenHeight,
   ) {
     return Container(
-      height: 115,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.4),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -368,20 +358,17 @@ class _HomePageState extends State<HomePage> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+            style: theme.textTheme.titleMedium?.copyWith(
               color: color,
-              height: 1.1,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[700],
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textMuted,
               height: 1.2,
             ),
           ),
@@ -390,32 +377,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuickActions(double screenWidth, double screenHeight) {
+  Widget _buildQuickActions(ThemeData theme, MediaQueryData media) {
     final actions = HomeData.quickActions;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.only(left: screenWidth * 0.02),
+          padding: EdgeInsets.only(left: media.size.width * 0.02),
           child: Text(
             'Quick Actions',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        SizedBox(height: screenHeight * 0.02),
+        SizedBox(height: media.size.height * 0.02),
         ...actions.asMap().entries.map((entry) {
           final action = entry.value;
-          final showPrediction =
-              entry.key > 0; // Show prediction for Symptoms and Mood
+          final showPrediction = entry.key > 0;
+
           VoidCallback onTap;
           final titleLower = action.title.toLowerCase();
           if (titleLower.contains('period')) {
             onTap = () {
-              // In a full app, you might navigate to the Calendar tab here.
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Open Calendar to log today\'s period.'),
@@ -449,9 +434,11 @@ class _HomePageState extends State<HomePage> {
               );
             };
           }
+
           return Padding(
-            padding: EdgeInsets.only(bottom: screenHeight * 0.015),
+            padding: EdgeInsets.only(bottom: media.size.height * 0.015),
             child: _buildActionCard(
+              theme,
               action.title,
               _getIconData(action.iconName),
               Color(action.colorValue),
@@ -478,56 +465,65 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildActionCard(
+    ThemeData theme,
     String title,
     IconData icon,
     Color color,
     bool showPrediction,
     VoidCallback onTap,
   ) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    return GlassPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      borderRadius: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
           child: Row(
             children: [
               Container(
                 width: 50,
                 height: 50,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color, color.withOpacity(0.7)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: AppShadows.soft(
+                    color: color.withOpacity(0.35),
+                    blur: 22,
+                  ),
+                ),
                 child: Icon(icon, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (showPrediction)
+                      Text(
+                        'Includes predictions',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (showPrediction) ...[
-                const SizedBox(width: 8),
-                Text(
-                  '(prediction)',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                ),
-              ],
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.white70,
+              ),
             ],
           ),
         ),
@@ -535,37 +531,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTodaysInsights(double screenWidth, double screenHeight) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
+  Widget _buildTodaysInsights(ThemeData theme, MediaQueryData media) {
+    return GlassPanel(
+      padding: EdgeInsets.all(media.size.width * 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Today\'s Insights',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: screenHeight * 0.015),
+          SizedBox(height: media.size.height * 0.015),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFCE7F3),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,9 +557,13 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   width: 40,
                   height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD946A6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
+                    boxShadow: AppShadows.soft(
+                      color: AppColors.primary.withOpacity(0.35),
+                      blur: 18,
+                    ),
                   ),
                   child: const Icon(
                     Icons.wb_sunny,
@@ -588,20 +576,18 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Ovulation Phase Active',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                      Text(
+                        HomeData.todaysInsight.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Your fertility window is at its peak. Consider tracking basal body temperature for more accurate predictions.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
+                        HomeData.todaysInsight.description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textMuted,
                           height: 1.4,
                         ),
                       ),
@@ -616,134 +602,118 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTodaysTip(double screenWidth, double screenHeight) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
+  Widget _buildTodaysTip(ThemeData theme, MediaQueryData media) {
+    return GlassPanel(
+      padding: EdgeInsets.all(media.size.width * 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Today\'s Tip',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: screenHeight * 0.015),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFCE7F3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD946A6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.water_drop,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Hydration Focus',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'During ovulation, increase your water intake to support cervical mucus production and overall reproductive health.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          SizedBox(height: media.size.height * 0.015),
+          _buildTipRow(
+            theme,
+            HomeData.todaysTip.title,
+            HomeData.todaysTip.description,
+            Icons.water_drop,
+            AppColors.primary,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHealthTips(double screenWidth, double screenHeight) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildTipRow(
+    ThemeData theme,
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: AppShadows.soft(color: color.withOpacity(0.3), blur: 18),
           ),
-        ],
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.05),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textMuted,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHealthTips(ThemeData theme, MediaQueryData media) {
+    return GlassPanel(
+      padding: EdgeInsets.all(media.size.width * 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Health Tips',
-            style: TextStyle(
-              fontSize: screenWidth > 600 ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: screenHeight * 0.015),
-          _buildHealthTipCard(
-            'Ovulation Nutrition',
-            'Focus on antioxidant-rich foods like berries and leafy greens during your fertile window.',
-            Icons.restaurant,
-            const Color(0xFFFCE7F3),
-            const Color(0xFFD946A6),
-          ),
-          SizedBox(height: screenHeight * 0.015),
-          _buildHealthTipCard(
-            'Exercise Tip',
-            'Light cardio and yoga are perfect for your current cycle phase.',
-            Icons.fitness_center,
-            const Color(0xFFDBEAFE),
-            const Color(0xFF3B82F6),
-          ),
+          SizedBox(height: media.size.height * 0.015),
+          ...HomeData.healthTips.map((tip) {
+            final color = Color(
+              HomeData.healthTipColors[tip.category] ?? AppColors.primary.value,
+            );
+            final iconName =
+                HomeData.healthTipIcons[tip.category] ?? 'favorite';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _buildHealthTipCard(
+                theme,
+                tip.title,
+                tip.description,
+                _getIconData(iconName),
+                color.withOpacity(0.12),
+                color,
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
   Widget _buildHealthTipCard(
+    ThemeData theme,
     String title,
     String description,
     IconData icon,
@@ -754,7 +724,7 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -762,7 +732,14 @@ class _HomePageState extends State<HomePage> {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: iconColor,
+              shape: BoxShape.circle,
+              boxShadow: AppShadows.soft(
+                color: iconColor.withOpacity(0.3),
+                blur: 18,
+              ),
+            ),
             child: Icon(icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
@@ -772,18 +749,16 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[700],
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textMuted,
                     height: 1.4,
                   ),
                 ),
@@ -791,6 +766,27 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGlow({
+    required Alignment alignment,
+    required double size,
+    required Color color,
+    double opacity = 0.25,
+  }) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color.withOpacity(opacity), color.withOpacity(0)],
+          ),
+        ),
       ),
     );
   }

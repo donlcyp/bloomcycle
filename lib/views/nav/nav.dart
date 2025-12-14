@@ -106,7 +106,21 @@ class _InsightsPageState extends State<InsightsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> cyclesDb = _cyclesFromDb;
+    // Normalize DB cycles by filling missing lengths from user settings
+    final defaults = UserState.currentUser.settings.cycleSettings;
+    final List<Map<String, dynamic>> cyclesDb = _cyclesFromDb.map((c) {
+      final int cycleLen = (c['cycleLength'] ?? 0) is int
+          ? (c['cycleLength'] as int)
+          : int.tryParse('${c['cycleLength'] ?? ''}') ?? 0;
+      final int periodLen = (c['periodLength'] ?? 0) is int
+          ? (c['periodLength'] as int)
+          : int.tryParse('${c['periodLength'] ?? ''}') ?? 0;
+      return {
+        ...c,
+        'cycleLength': cycleLen > 0 ? cycleLen : defaults.cycleLength,
+        'periodLength': periodLen > 0 ? periodLen : defaults.periodLength,
+      };
+    }).toList();
     final List<CycleHistoryEntry> cyclesStatic = CycleHistoryData.recentCycles;
     final bool usingDb = cyclesDb.isNotEmpty;
     final avgCycle = usingDb

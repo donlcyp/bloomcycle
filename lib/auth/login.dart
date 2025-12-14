@@ -12,6 +12,7 @@ import '../state/user_state.dart';
 import '../models/profile_model.dart';
 import '../models/user_profile_data.dart';
 import '../main.dart';
+import '../theme/design_system.dart';
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -154,8 +155,9 @@ class _LoginPageState extends State<LoginPage> {
       final message = permissionDenied
           ? 'We could not sync your profile because Firestore security rules blocked the write. Make sure authenticated users can read/write their own users/{uid} document.'
           : e.message ?? 'Failed to sync your profile.';
-      appScaffoldMessengerKey.currentState
-          ?.showSnackBar(SnackBar(content: Text(message)));
+      appScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     } catch (e) {
       if (!mounted) return;
       appScaffoldMessengerKey.currentState?.showSnackBar(
@@ -201,8 +203,9 @@ class _LoginPageState extends State<LoginPage> {
         final message = permissionDenied
             ? 'Unable to load your profile because Firestore security rules blocked the read.'
             : e.message ?? 'Unable to load your profile.';
-        appScaffoldMessengerKey.currentState
-            ?.showSnackBar(SnackBar(content: Text(message)));
+        appScaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text(message)),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -241,14 +244,17 @@ class _LoginPageState extends State<LoginPage> {
 
   ProfileModel _toProfileModel(User user, Map<String, dynamic>? userRecord) {
     final profileMap = (userRecord?['profile'] as Map<String, dynamic>?) ?? {};
-    final displayName = (profileMap['displayName'] as String?) ?? user.displayName ?? '';
+    final displayName =
+        (profileMap['displayName'] as String?) ?? user.displayName ?? '';
     final parts = displayName.trim().split(' ');
     final firstName = parts.isNotEmpty ? parts.first : '';
     final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     final email = (profileMap['email'] as String?) ?? user.email ?? '';
-    final phone = (profileMap['phoneNumber'] as String?) ?? user.phoneNumber ?? '';
+    final phone =
+        (profileMap['phoneNumber'] as String?) ?? user.phoneNumber ?? '';
     final photoURL = (profileMap['photoURL'] as String?) ?? user.photoURL ?? '';
-    final createdAt = (userRecord?['createdAt'] as DateTime?) ??
+    final createdAt =
+        (userRecord?['createdAt'] as DateTime?) ??
         user.metadata.creationTime ??
         DateTime.now();
     final cycleLength = (userRecord?['profile']?['cycleLength'] as int?) ?? 28;
@@ -300,8 +306,9 @@ class _LoginPageState extends State<LoginPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      appScaffoldMessengerKey.currentState
-          ?.showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
+      appScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Google sign-in error: $e')),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -325,31 +332,30 @@ class _LoginPageState extends State<LoginPage> {
         case LoginStatus.success:
           final AccessToken? accessToken = result.accessToken;
           if (accessToken == null) {
-            if (!mounted) return;
+            if (!mounted) break;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Facebook login token missing.')),
             );
             break;
           }
 
-          final OAuthCredential credential = FacebookAuthProvider.credential(
+          final credential = FacebookAuthProvider.credential(
             accessToken.tokenString,
           );
-
           final userCredential = await FirebaseAuth.instance
               .signInWithCredential(credential);
 
           await _handlePostSignIn(userCredential.user, source: 'facebook');
           break;
         case LoginStatus.cancelled:
-          if (!mounted) return;
+          if (!mounted) break;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Facebook login cancelled.')),
           );
           break;
         case LoginStatus.failed:
+          if (!mounted) break;
           final message = result.message ?? 'Facebook login failed.';
-          if (!mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(message)));
@@ -378,386 +384,307 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMediumScreen = screenHeight < 900;
+    final media = MediaQuery.of(context);
+    final theme = Theme.of(context);
+    final isLarge = media.size.width >= AppBreakpoints.tablet;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5E6E8),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.08,
-              vertical: screenHeight * 0.02,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo and App Name Header
-                Container(
-                  margin: EdgeInsets.only(bottom: isMediumScreen ? 15 : 24),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/logo1.png',
-                        width: screenWidth * 0.18,
-                        height: screenWidth * 0.18,
-                        fit: BoxFit.contain,
-                      ),
-                      SizedBox(height: screenHeight * 0.01),
-                      Text(
-                        'BloomCycle',
-                        style: TextStyle(
-                          fontSize: screenWidth > 600 ? 28 : 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.005),
-                      Text(
-                        'Track your cycle with confidence',
-                        style: TextStyle(
-                          fontSize: screenWidth > 600 ? 12 : 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // White Card
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(isMediumScreen ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Sign In Title
-                      const Text(
-                        'Sign In',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Welcome back! Please log in to your account',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 20),
-                      // Email Address
-                      const Text(
-                        'Email Address',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          hintText: 'Enter your email address',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFD946A6),
-                              width: 2,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Password
-                      const Text(
-                        'Password',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          hintText: 'Enter your password',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFD946A6),
-                              width: 2,
-                            ),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: Colors.grey,
-                              size: 18,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Remember Me and Forgot Password
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberMe = value ?? false;
-                                  });
-                                },
-                                activeColor: const Color(0xFFD946A6),
-                              ),
-                              const Text(
-                                'Remember me',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              // Handle forgot password
-                            },
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFFD946A6),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      // Sign In Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _isLoggingIn
-                              ? null
-                              : () async {
-                                  if (_emailController.text.isEmpty ||
-                                      _passwordController.text.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please enter both email and password.',
-                                        ),
-                                      ),
-                                    );
-                                    return;
-                                  }
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+          ),
+          _buildGlow(
+            size: 260,
+            alignment: const Alignment(-1.1, -1.0),
+            color: AppColors.secondary,
+          ),
+          _buildGlow(
+            size: 320,
+            alignment: const Alignment(1.0, -0.1),
+            color: AppColors.tertiary,
+          ),
+          _buildGlow(
+            size: 280,
+            alignment: const Alignment(-0.2, 1.1),
+            color: Colors.white,
+            opacity: 0.22,
+          ),
+          SafeArea(
+            child: Center(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final contentWidth = constraints.maxWidth.clamp(340.0, 560.0);
 
-                                  setState(() {
-                                    _isLoggingIn = true;
-                                  });
-
-                                  try {
-                                    // Check for placeholder admin account
-                                    if (_emailController.text.trim() ==
-                                            'admin@bloomcycle.com' &&
-                                        _passwordController.text ==
-                                            'admin123') {
-                                      if (!mounted) return;
-
-                                      // ignore: use_build_context_synchronously
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const AdminDashboard(),
-                                        ),
-                                        (route) => false,
-                                      );
-                                      return;
-                                    }
-
-                                    // Sign in with Firebase
-                                    final credential = await FirebaseAuth
-                                        .instance
-                                        .signInWithEmailAndPassword(
-                                          email: _emailController.text.trim(),
-                                          password: _passwordController.text,
-                                        );
-
-                                    await _handlePostSignIn(
-                                      credential.user,
-                                      source: 'email',
-                                    );
-                                  } on FirebaseAuthException catch (e) {
-                                    String errorMessage = 'Login failed';
-                                    if (e.code == 'user-not-found') {
-                                      errorMessage =
-                                          'No account found with this email.';
-                                    } else if (e.code == 'wrong-password') {
-                                      errorMessage = 'Incorrect password.';
-                                    } else if (e.code == 'invalid-email') {
-                                      errorMessage = 'Invalid email address.';
-                                    } else if (e.code == 'user-disabled') {
-                                      errorMessage =
-                                          'This account has been disabled.';
-                                    } else {
-                                      errorMessage =
-                                          e.message ?? 'Login failed';
-                                    }
-
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(errorMessage)),
-                                    );
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() {
-                                        _isLoggingIn = false;
-                                      });
-                                    }
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD946A6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoggingIn
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Text(
-                                  'Sign In',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Already have account? Sign up
-                      Center(
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              const TextSpan(
-                                text: "Don't have an account? ",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'Sign up',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFFD946A6),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const SignupPage(),
-                                      ),
-                                    );
-                                  },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Social Login
-                      Row(
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 56,
+                      horizontal: 24,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: contentWidth),
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 45,
-                            height: 45,
+                            width: isLarge ? 120 : 96,
+                            height: isLarge ? 120 : 96,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: AppShadows.soft(
+                                color: Colors.white.withOpacity(0.18),
+                                blur: 40,
+                              ),
                             ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: _isGoogleLoading
-                                    ? null
-                                    : () {
-                                        _signInWithGoogle();
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/applogo.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'BloomCycle',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Track your cycle with confidence',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.82),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 36),
+                          GlassPanel(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isLarge ? 40 : 26,
+                              vertical: isLarge ? 36 : 28,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Welcome back',
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Log in to continue your journey',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                                const SizedBox(height: 28),
+                                Text(
+                                  'Email address',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.8,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Enter your email',
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Password',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary.withOpacity(
+                                      0.8,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter your password',
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
                                       },
-                                child: Center(
-                                  child: _isGoogleLoading
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Checkbox(
+                                          value: _rememberMe,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _rememberMe = value ?? false;
+                                            });
+                                          },
+                                        ),
+                                        Text(
+                                          'Remember me',
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                      ],
+                                    ),
+                                    TextButton(
+                                      onPressed: () {},
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppColors.secondary,
+                                      ),
+                                      child: const Text('Forgot password?'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoggingIn
+                                        ? null
+                                        : () async {
+                                            if (_emailController.text.isEmpty ||
+                                                _passwordController
+                                                    .text
+                                                    .isEmpty) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Please enter both email and password.',
+                                                  ),
+                                                ),
+                                              );
+                                              return;
+                                            }
+
+                                            setState(() {
+                                              _isLoggingIn = true;
+                                            });
+
+                                            try {
+                                              if (_emailController.text
+                                                          .trim() ==
+                                                      'admin@bloomcycle.com' &&
+                                                  _passwordController.text ==
+                                                      'admin123') {
+                                                if (!mounted) return;
+
+                                                Navigator.of(
+                                                  context,
+                                                ).pushAndRemoveUntil(
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const AdminDashboard(),
+                                                  ),
+                                                  (route) => false,
+                                                );
+                                                return;
+                                              }
+
+                                              final credential =
+                                                  await FirebaseAuth.instance
+                                                      .signInWithEmailAndPassword(
+                                                        email: _emailController
+                                                            .text
+                                                            .trim(),
+                                                        password:
+                                                            _passwordController
+                                                                .text,
+                                                      );
+
+                                              await _handlePostSignIn(
+                                                credential.user,
+                                                source: 'email',
+                                              );
+                                            } on FirebaseAuthException catch (
+                                              e
+                                            ) {
+                                              String errorMessage =
+                                                  'Login failed';
+                                              if (e.code == 'user-not-found') {
+                                                errorMessage =
+                                                    'No account found with this email.';
+                                              } else if (e.code ==
+                                                  'wrong-password') {
+                                                errorMessage =
+                                                    'Incorrect password.';
+                                              } else if (e.code ==
+                                                  'invalid-email') {
+                                                errorMessage =
+                                                    'Invalid email address.';
+                                              } else if (e.code ==
+                                                  'user-disabled') {
+                                                errorMessage =
+                                                    'This account has been disabled.';
+                                              } else {
+                                                errorMessage =
+                                                    e.message ?? 'Login failed';
+                                              }
+
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(errorMessage),
+                                                ),
+                                              );
+                                            } finally {
+                                              if (mounted) {
+                                                setState(() {
+                                                  _isLoggingIn = false;
+                                                });
+                                              }
+                                            }
+                                          },
+                                    child: _isLoggingIn
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.4,
+                                            ),
+                                          )
+                                        : const Text('Sign in'),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                OutlinedButton.icon(
+                                  onPressed: _isGoogleLoading
+                                      ? null
+                                      : _signInWithGoogle,
+                                  icon: _isGoogleLoading
                                       ? const SizedBox(
                                           width: 18,
                                           height: 18,
@@ -771,31 +698,20 @@ class _LoginPageState extends State<LoginPage> {
                                         )
                                       : Image.asset(
                                           'assets/google.png',
-                                          width: 24,
-                                          height: 24,
+                                          width: 20,
+                                          height: 20,
                                         ),
+                                  label: const Text('Continue with Google'),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            width: 45,
-                            height: 45,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1877F2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _isFacebookLoading
-                                    ? null
-                                    : () {
-                                        _signInWithFacebook();
-                                      },
-                                child: Center(
-                                  child: _isFacebookLoading
+                                const SizedBox(height: 12),
+                                ElevatedButton.icon(
+                                  onPressed: _isFacebookLoading
+                                      ? null
+                                      : _signInWithFacebook,
+                                  icon: _isFacebookLoading
                                       ? const SizedBox(
                                           width: 18,
                                           height: 18,
@@ -807,67 +723,106 @@ class _LoginPageState extends State<LoginPage> {
                                                 ),
                                           ),
                                         )
-                                      : const Icon(
-                                          Icons.facebook,
-                                          size: 20,
-                                          color: Colors.white,
-                                        ),
+                                      : const Icon(Icons.facebook),
+                                  label: const Text('Continue with Facebook'),
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                    backgroundColor: const Color(0xFF1877F2),
+                                  ),
                                 ),
+                                const SizedBox(height: 24),
+                                Center(
+                                  child: RichText(
+                                    textAlign: TextAlign.center,
+                                    text: TextSpan(
+                                      style: theme.textTheme.bodySmall,
+                                      children: [
+                                        const TextSpan(
+                                          text: "Don't have an account? ",
+                                        ),
+                                        TextSpan(
+                                          text: 'Create one',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const SignupPage(),
+                                                ),
+                                              );
+                                            },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withOpacity(0.8),
                               ),
+                              children: [
+                                const TextSpan(
+                                  text: 'By signing in, you agree to our ',
+                                ),
+                                TextSpan(
+                                  text: 'Terms of Service',
+                                  style: const TextStyle(
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => _showTermsDialog(context),
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: const TextStyle(
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => _showPrivacyDialog(context),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Terms of Service and Privacy Policy
-                Center(
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      children: [
-                        const TextSpan(
-                          text: 'By signing in, you agree to our\n',
-                          style: TextStyle(fontSize: 10, color: Colors.black),
-                        ),
-                        TextSpan(
-                          text: 'Terms of Service',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFFD946A6),
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              _showTermsDialog(context);
-                            },
-                        ),
-                        const TextSpan(
-                          text: ' and ',
-                          style: TextStyle(fontSize: 10, color: Colors.black),
-                        ),
-                        TextSpan(
-                          text: 'Privacy Policy',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFFD946A6),
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              _showPrivacyDialog(context);
-                            },
-                        ),
-                      ],
                     ),
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlow({
+    required double size,
+    required Alignment alignment,
+    required Color color,
+    double opacity = 0.3,
+  }) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color.withOpacity(opacity), color.withOpacity(0)],
           ),
         ),
       ),

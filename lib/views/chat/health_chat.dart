@@ -10,13 +10,20 @@ class HealthChatPage extends StatefulWidget {
 }
 
 class _HealthChatPageState extends State<HealthChatPage> {
-  final List<_ChatMessage> _messages = <_ChatMessage>[
-    const _ChatMessage(
-      sender: ChatSender.bot,
-      text:
-          'Hi, I\'m Bloom, your cycle education assistant. I can share general health tips about the menstrual cycle and self-care. I cannot diagnose or replace a doctor. How can I help you today?',
-    ),
-  ];
+  late final List<_ChatMessage> _messages;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = [
+      _ChatMessage(
+        sender: ChatSender.bot,
+        text:
+            'Hi, I\'m Bloom, your cycle education assistant. I can share general health tips about the menstrual cycle and self-care. I cannot diagnose or replace a doctor. How can I help you today?',
+        timestamp: DateTime.now(),
+      ),
+    ];
+  }
 
   final TextEditingController _controller = TextEditingController();
   bool _sending = false;
@@ -27,6 +34,13 @@ class _HealthChatPageState extends State<HealthChatPage> {
     'What is a normal menstrual cycle length?',
     'How can I ease period cramps?',
     'What is PMS and how can I manage it?',
+    'What are signs of ovulation?',
+    'How can I improve my period symptoms?',
+    'What should I track in my cycle?',
+    'Is irregular bleeding normal?',
+    'How does exercise affect my cycle?',
+    'What foods help with period symptoms?',
+    'When should I see a doctor?',
   ];
 
   @override
@@ -130,22 +144,62 @@ class _HealthChatPageState extends State<HealthChatPage> {
               ),
             ),
             const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Bloom',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  'Cycle education assistant (not medical advice)',
-                  style: TextStyle(fontSize: 11, color: Colors.white70),
-                ),
-              ],
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Bloom',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    'Cycle education assistant (not medical advice)',
+                    style: TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+        actions: [
+          Tooltip(
+            message: 'Clear conversation',
+            child: IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _clearConversation,
+            ),
+          ),
+          Tooltip(
+            message: 'Emergency: Call 911 or local emergency services',
+            child: IconButton(
+              icon: const Icon(Icons.emergency),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Emergency Resources'),
+                    content: const Text(
+                      'If you are experiencing a medical emergency:\n\n'
+                      '• Call 911 (or your local emergency number)\n'
+                      '• Go to the nearest emergency room\n'
+                      '• Contact your healthcare provider immediately\n\n'
+                      'For mental health crises:\n'
+                      '• National Suicide Prevention Lifeline: 988\n'
+                      '• Crisis Text Line: Text HOME to 741741',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       backgroundColor: backgroundColor,
       body: Column(
@@ -167,53 +221,76 @@ class _HealthChatPageState extends State<HealthChatPage> {
                 final msg = _messages[index];
                 final isUser = msg.sender == ChatSender.user;
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: isUser
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.start,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: isUser
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
                     children: [
-                      if (!isUser) ...[
-                        _buildAvatar(isUser: false),
-                        const SizedBox(width: 8),
-                      ],
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isUser ? userBubbleColor : botBubbleColor,
-                            borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(18),
-                              topRight: const Radius.circular(18),
-                              bottomLeft: Radius.circular(isUser ? 18 : 4),
-                              bottomRight: Radius.circular(isUser ? 4 : 18),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: isUser
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                        children: [
+                          if (!isUser) ...[
+                            _buildAvatar(isUser: false),
+                            const SizedBox(width: 8),
+                          ],
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
                               ),
-                            ],
-                          ),
-                          child: Text(
-                            msg.text,
-                            style: TextStyle(
-                              color: isUser ? Colors.white : Colors.black87,
-                              fontSize: 14,
-                              height: 1.4,
+                              decoration: BoxDecoration(
+                                color: isUser
+                                    ? userBubbleColor
+                                    : botBubbleColor,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(18),
+                                  topRight: const Radius.circular(18),
+                                  bottomLeft: Radius.circular(isUser ? 18 : 4),
+                                  bottomRight: Radius.circular(isUser ? 4 : 18),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                msg.text,
+                                style: TextStyle(
+                                  color: isUser ? Colors.white : Colors.black87,
+                                  fontSize: 14,
+                                  height: 1.4,
+                                ),
+                              ),
                             ),
+                          ),
+                          if (isUser) ...[
+                            const SizedBox(width: 8),
+                            _buildAvatar(isUser: true),
+                          ],
+                        ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: 4,
+                          left: isUser ? 0 : 36,
+                          right: isUser ? 36 : 0,
+                        ),
+                        child: Text(
+                          _formatTime(msg.timestamp),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
                           ),
                         ),
                       ),
-                      if (isUser) ...[
-                        const SizedBox(width: 8),
-                        _buildAvatar(isUser: true),
-                      ],
                     ],
                   ),
                 );
@@ -345,6 +422,60 @@ class _HealthChatPageState extends State<HealthChatPage> {
     );
   }
 
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    String timeStr =
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+
+    if (messageDate == today) {
+      return 'Today $timeStr';
+    } else if (messageDate == yesterday) {
+      return 'Yesterday $timeStr';
+    } else {
+      return '${dateTime.day}/${dateTime.month} $timeStr';
+    }
+  }
+
+  void _clearConversation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Conversation?'),
+        content: const Text(
+          'Are you sure you want to clear all messages? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _messages.clear();
+                _messages.add(
+                  _ChatMessage(
+                    sender: ChatSender.bot,
+                    text:
+                        'Hi, I\'m Bloom, your cycle education assistant. I can share general health tips about the menstrual cycle and self-care. I cannot diagnose or replace a doctor. How can I help you today?',
+                    timestamp: DateTime.now(),
+                  ),
+                );
+                _showSuggestions = true;
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSuggestionsBar(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -377,8 +508,10 @@ class _HealthChatPageState extends State<HealthChatPage> {
 enum ChatSender { user, bot }
 
 class _ChatMessage {
+  _ChatMessage({required this.sender, required this.text, DateTime? timestamp})
+    : timestamp = timestamp ?? DateTime.now();
+
   final ChatSender sender;
   final String text;
-
-  const _ChatMessage({required this.sender, required this.text});
+  final DateTime timestamp;
 }

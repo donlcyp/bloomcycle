@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:developer' as developer;
 
 bool _googleSignInInitialized = false;
 Future<void>? _initializationFuture;
@@ -56,9 +57,19 @@ Future<GoogleSignInResult?> signInWithGoogleCredential({
   try {
     account = await GoogleSignIn.instance.authenticate(scopeHint: scopeHint);
   } on GoogleSignInException catch (e) {
+    developer.log(
+      'GoogleSignInException: code=${e.code}',
+      name: 'google_sign_in',
+    );
     if (e.code == GoogleSignInExceptionCode.canceled) {
       return null;
     }
+    rethrow;
+  } catch (e) {
+    developer.log(
+      'Unexpected exception during Google sign-in: $e',
+      name: 'google_sign_in',
+    );
     rethrow;
   }
   final GoogleSignInAuthentication authData = account.authentication;

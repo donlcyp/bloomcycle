@@ -18,17 +18,103 @@ class CalendarPage extends StatefulWidget {
 class _CalendarPageState extends State<CalendarPage> {
   late DateTime currentMonth;
   DateTime? cycleStartDate;
+  int _cycleLength = 28;
+  int _periodLength = 5;
+  static const int _defaultLutealLength = 14;
 
   @override
   void initState() {
     super.initState();
     currentMonth = DateTime.now();
+    _loadCycleData();
+  }
+
+  Future<void> _loadCycleData() async {
+    final settings = UserState.currentUser.settings.cycleSettings;
+    setState(() {
+      _cycleLength = settings.cycleLength;
+      _periodLength = settings.periodLength;
+    });
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final latest = await FirebaseService.getCycleData(user.uid);
+      if (!mounted) return;
+      if (latest == null) return;
+
+      final start = latest['cycleStart'] as DateTime?;
+      final storedCycleLength = latest['cycleLength'] as int?;
+      final storedPeriodLength = latest['periodLength'] as int?;
+
+      setState(() {
+        if (start != null) {
+          cycleStartDate = DateTime(start.year, start.month, start.day);
+        }
+        _cycleLength = storedCycleLength ?? _cycleLength;
+        _periodLength = storedPeriodLength ?? _periodLength;
+      });
+    } catch (_) {
+      // Ignore read failures; calendar will fallback to local settings.
+    }
+  }
+
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  int _ovulationDayForCycle(int cycleLength) {
+    final candidate = cycleLength - _defaultLutealLength;
+    if (candidate >= 1 && candidate <= cycleLength) return candidate;
+    return (cycleLength / 2).round().clamp(1, cycleLength);
+  }
+
+  ({int cycleDay, bool isPeriodDay, bool isFertileWindow, bool isOvulationDay})
+  _predictionForDate(DateTime date) {
+    final start = cycleStartDate;
+    if (start == null) {
+      return (
+        cycleDay: 0,
+        isPeriodDay: false,
+        isFertileWindow: false,
+        isOvulationDay: false,
+      );
+    }
+
+    final normalizedDate = _dateOnly(date);
+    final normalizedStart = _dateOnly(start);
+    final diffDays = normalizedDate.difference(normalizedStart).inDays;
+
+    // Support dates before start as well by using a positive modulo.
+    final int cycleIndex = diffDays >= 0
+        ? diffDays % _cycleLength
+        : (_cycleLength - ((-diffDays) % _cycleLength)) % _cycleLength;
+    final cycleDay = cycleIndex + 1;
+
+    final periodLen = _periodLength.clamp(1, _cycleLength);
+    final ovulationDay = _ovulationDayForCycle(_cycleLength);
+    final fertileStart = (ovulationDay - 5).clamp(1, _cycleLength);
+    final fertileEnd = (ovulationDay + 1).clamp(1, _cycleLength);
+
+    final isPeriodDay = cycleDay >= 1 && cycleDay <= periodLen;
+    final isOvulationDay = cycleDay == ovulationDay;
+    final isFertileWindow = cycleDay >= fertileStart && cycleDay <= fertileEnd;
+
+    return (
+      cycleDay: cycleDay,
+      isPeriodDay: isPeriodDay,
+      isFertileWindow: isFertileWindow,
+      isOvulationDay: isOvulationDay,
+    );
   }
 
   void _markTodayAsCycleStart() {
     final now = DateTime.now();
     setState(() {
       cycleStartDate = DateTime(now.year, now.month, now.day);
+      final settings = UserState.currentUser.settings.cycleSettings;
+      _cycleLength = settings.cycleLength;
+      _periodLength = settings.periodLength;
     });
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -74,6 +160,35 @@ class _CalendarPageState extends State<CalendarPage> {
                 style: TextStyle(fontSize: 13, color: Colors.grey[700]),
               ),
               const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    label: const Text('Log symptoms'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(this.context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SymptomsLogPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Add note'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(this.context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const NotesLogPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               if (isCycleStart)
                 const Text(
                   'Marked as start of your menstrual cycle.',
@@ -107,34 +222,6 @@ class _CalendarPageState extends State<CalendarPage> {
                 ),
                 const SizedBox(height: 16),
               ],
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                children: [
-                  ActionChip(
-                    label: const Text('Log symptoms'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.of(this.context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SymptomsLogPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  ActionChip(
-                    label: const Text('Add note'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.of(this.context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const NotesLogPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -219,10 +306,7 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
               Text(
                 'Manage your cycle events',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -231,10 +315,16 @@ class _CalendarPageState extends State<CalendarPage> {
               TextButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const NotesHistoryPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const NotesHistoryPage(),
+                    ),
                   );
                 },
-                icon: const Icon(Icons.notes, size: 18, color: Color(0xFFEC4899)),
+                icon: const Icon(
+                  Icons.notes,
+                  size: 18,
+                  color: Color(0xFFEC4899),
+                ),
                 label: const Text(
                   'Notes',
                   style: TextStyle(
@@ -359,16 +449,28 @@ class _CalendarPageState extends State<CalendarPage> {
         currentMonth.month,
         calendarDay.day,
       );
+      final prediction = _predictionForDate(date);
       final isCycleStart =
           cycleStartDate != null &&
           date.year == cycleStartDate!.year &&
           date.month == cycleStartDate!.month &&
           date.day == cycleStartDate!.day;
+
+      final dayWithIndicators = CalendarDay(
+        day: calendarDay.day,
+        isToday: calendarDay.isToday,
+        hasSymptomsLogged: CalendarData.hasSymptomsForDate(date),
+        hasNotesAdded: CalendarData.hasNoteForDate(date),
+        isPeriodDay: prediction.isPeriodDay,
+        isFertileWindow: prediction.isFertileWindow,
+        hasOvulation: prediction.isOvulationDay,
+      );
+
       dayWidgets.add(
         GestureDetector(
           onTap: () =>
-              _openDayDetailsBottomSheet(date, calendarDay, isCycleStart),
-          child: _buildDayCell(calendarDay, isCycleStart),
+              _openDayDetailsBottomSheet(date, dayWithIndicators, isCycleStart),
+          child: _buildDayCell(dayWithIndicators, isCycleStart),
         ),
       );
     }
@@ -386,26 +488,19 @@ class _CalendarPageState extends State<CalendarPage> {
       backgroundColor = const Color(0xFFEC4899);
       textColor = Colors.white;
     }
-    
-    // If cycle start is set, show cycle indicators
-    if (cycleStartDate != null) {
-      final date = DateTime(currentMonth.year, currentMonth.month, calendarDay.day);
-      final daysFromStart = date.difference(cycleStartDate!).inDays;
-      
-      if (daysFromStart >= 0 && daysFromStart < 5 && !calendarDay.isToday) {
-        // Period days (first 5 days)
+
+    if (!calendarDay.isToday) {
+      if (calendarDay.isPeriodDay) {
         backgroundColor = const Color(0xFFFCE7F3);
         borderColor = const Color(0xFFFCE7F3);
-      } else if (daysFromStart >= 8 && daysFromStart < 13 && !calendarDay.isToday) {
-        // Fertile window
+      } else if (calendarDay.isFertileWindow) {
         backgroundColor = const Color(0xFFD1FAE5);
         borderColor = const Color(0xFFD1FAE5);
       }
-      
-      // Ovulation day (day 14)
-      if (daysFromStart == 14) {
-        isOvulationDay = true;
-      }
+    }
+
+    if (calendarDay.hasOvulation) {
+      isOvulationDay = true;
     }
 
     return Stack(
@@ -533,14 +628,14 @@ class _CalendarPageState extends State<CalendarPage> {
           // Period Days (shown after cycle start is set)
           _buildLegendRow(
             color: const Color(0xFFFCE7F3),
-            label: 'Period Days (Days 0-4)',
+            label: 'Period Days',
             screenWidth: screenWidth,
           ),
           SizedBox(height: screenHeight * 0.01),
           // Fertile Window (shown after cycle start is set)
           _buildLegendRow(
             color: const Color(0xFFD1FAE5),
-            label: 'Fertile Window (Days 8-12)',
+            label: 'Fertile Window',
             screenWidth: screenWidth,
           ),
           SizedBox(height: screenHeight * 0.01),
@@ -554,7 +649,7 @@ class _CalendarPageState extends State<CalendarPage> {
           _buildNotesLegendRow(screenWidth),
           SizedBox(height: screenHeight * 0.01),
           Text(
-            'ℹ️ Cycle colors appear after you mark your menstruation start date',
+            'ℹ️ Predictions update after you mark your cycle start date and set cycle/period length.',
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey[600],
@@ -585,10 +680,7 @@ class _CalendarPageState extends State<CalendarPage> {
         SizedBox(width: screenWidth * 0.03),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-          ),
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
         ),
       ],
     );
@@ -613,10 +705,7 @@ class _CalendarPageState extends State<CalendarPage> {
         SizedBox(width: screenWidth * 0.03),
         const Text(
           'Symptoms Logged',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.black87),
         ),
       ],
     );
@@ -640,11 +729,8 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
         SizedBox(width: screenWidth * 0.03),
         const Text(
-          'Ovulation Day (Day 14)',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-          ),
+          'Ovulation Day',
+          style: TextStyle(fontSize: 12, color: Colors.black87),
         ),
       ],
     );
@@ -669,10 +755,7 @@ class _CalendarPageState extends State<CalendarPage> {
         SizedBox(width: screenWidth * 0.03),
         const Text(
           'Notes Added',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.black87),
         ),
       ],
     );

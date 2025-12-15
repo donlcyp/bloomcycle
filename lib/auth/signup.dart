@@ -5,6 +5,7 @@ import 'login.dart';
 import '../services/firebase_service.dart';
 import '../services/google_sign_in_helper.dart';
 import '../main.dart';
+import '../theme/responsive_helper.dart' as responsive;
 
 void _showTermsDialog(BuildContext context) {
   showDialog(
@@ -276,8 +277,9 @@ class _SignupPageState extends State<SignupPage> {
       );
     } catch (e) {
       if (!context.mounted) return;
-      appScaffoldMessengerKey.currentState
-          ?.showSnackBar(SnackBar(content: Text('Google sign-in error: $e')));
+      appScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text('Google sign-in error: $e')),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -344,14 +346,14 @@ class _SignupPageState extends State<SignupPage> {
       },
     );
 
-  if (email == null) {
-    return null;
-  }
+    if (email == null) {
+      return null;
+    }
 
-  final passwordController = TextEditingController();
-  final confirmController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
 
-  if (!context.mounted) return null;
+    if (!context.mounted) return null;
     final dialogCtx2 = appNavigatorKey.currentContext;
     if (dialogCtx2 == null) return null;
     final password = await showDialog<String>(
@@ -461,24 +463,34 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final responsiveHPadding = responsive.ResponsiveHelper.getHorizontalPadding(
+      context,
+    );
+    final responsiveVPadding = responsive.ResponsiveHelper.getVerticalPadding(
+      context,
+    );
+    final bottomPadding =
+        MediaQuery.of(context).viewInsets.bottom + responsiveVPadding;
+
+    // Reduce padding for small screens to fit content
+    final cardPadding = responsiveHPadding > 16 ? responsiveHPadding : 12.0;
     final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMediumScreen = screenHeight < 900;
-    final bool isSmallScreen = screenWidth < 480;
-    final double horizontalPadding = isSmallScreen ? 16 : screenWidth * 0.08;
-    final double verticalPadding = isSmallScreen ? 16 : screenHeight * 0.02;
-    final double cardPadding = isSmallScreen ? 16 : (isMediumScreen ? 20 : 24);
+    final topPadding =
+        screenHeight * 0.08; // Add proper top spacing for centering
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5E6E8),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: verticalPadding,
-          ),
-          child: Center(
-            child: ConstrainedBox(
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          left: responsiveHPadding,
+          right: responsiveHPadding,
+          top: topPadding,
+          bottom: bottomPadding,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: Container(
                 decoration: BoxDecoration(
@@ -497,20 +509,23 @@ class _SignupPageState extends State<SignupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Create Account Title
-                    const Text(
+                    Text(
                       'Create Account',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: cardPadding > 12 ? 22 : 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    const SizedBox(height: 4),
+                    Text(
                       'Join thousands of women taking control of their health',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: cardPadding > 12 ? 12 : 11,
+                        color: Colors.grey,
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: cardPadding > 12 ? 16 : 12),
                     // First Name
                     const Text(
                       'First Name',
@@ -520,7 +535,7 @@ class _SignupPageState extends State<SignupPage> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     TextField(
                       controller: _firstNameController,
                       decoration: InputDecoration(
@@ -543,11 +558,11 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: cardPadding > 12 ? 10 : 8),
                     // Last Name
                     const Text(
                       'Last Name',
@@ -557,7 +572,7 @@ class _SignupPageState extends State<SignupPage> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     TextField(
                       controller: _lastNameController,
                       decoration: InputDecoration(
@@ -580,11 +595,11 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: cardPadding > 12 ? 10 : 8),
                     // Email Address
                     const Text(
                       'Email Address',
@@ -594,7 +609,7 @@ class _SignupPageState extends State<SignupPage> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -618,11 +633,11 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: cardPadding > 12 ? 10 : 8),
                     // Password
                     const Text(
                       'Password',
@@ -632,7 +647,7 @@ class _SignupPageState extends State<SignupPage> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -670,7 +685,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                       ),
                     ),
@@ -679,7 +694,7 @@ class _SignupPageState extends State<SignupPage> {
                       'Must be at least 8 characters long',
                       style: TextStyle(fontSize: 11, color: Colors.grey),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: cardPadding > 12 ? 10 : 8),
                     // Confirm Password
                     const Text(
                       'Confirm Password',
@@ -689,7 +704,7 @@ class _SignupPageState extends State<SignupPage> {
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     TextField(
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirmPassword,
@@ -728,11 +743,11 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: cardPadding > 12 ? 12 : 10),
                     // Terms & Conditions Checkbox
                     Row(
                       children: [
@@ -743,7 +758,6 @@ class _SignupPageState extends State<SignupPage> {
                               _agreeToTerms = value ?? false;
                             });
                           },
-                          activeColor: const Color(0xFFD946A6),
                         ),
                         Expanded(
                           child: RichText(
@@ -795,7 +809,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: cardPadding > 12 ? 16 : 12),
                     // Create Account Button
                     SizedBox(
                       width: double.infinity,
@@ -804,7 +818,8 @@ class _SignupPageState extends State<SignupPage> {
                         onPressed: _isCreatingAccount
                             ? null
                             : () async {
-                                final messenger = appScaffoldMessengerKey.currentState;
+                                final messenger =
+                                    appScaffoldMessengerKey.currentState;
                                 final navState = appNavigatorKey.currentState;
                                 if (_firstNameController.text.isEmpty ||
                                     _emailController.text.isEmpty ||
@@ -958,7 +973,7 @@ class _SignupPageState extends State<SignupPage> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: cardPadding > 12 ? 16 : 12),
                     // Divider
                     Row(
                       children: [
@@ -980,7 +995,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: cardPadding > 12 ? 16 : 12),
                     // Social Signup Buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1047,19 +1062,14 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    // Sign In Link
+                    SizedBox(height: cardPadding > 12 ? 16 : 12),
+                    // Sign in link
                     Center(
                       child: RichText(
                         text: TextSpan(
+                          style: TextStyle(fontSize: 11, color: Colors.black),
                           children: [
-                            const TextSpan(
-                              text: 'Already have an account? ',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.black,
-                              ),
-                            ),
+                            const TextSpan(text: 'Already have an account? '),
                             TextSpan(
                               text: 'Sign in',
                               style: TextStyle(
@@ -1086,7 +1096,7 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

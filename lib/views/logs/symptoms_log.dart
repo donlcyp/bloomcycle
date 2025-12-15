@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../services/firebase_service.dart';
 
 class SymptomsLogPage extends StatefulWidget {
@@ -12,6 +13,7 @@ class SymptomsLogPage extends StatefulWidget {
 class _SymptomsLogPageState extends State<SymptomsLogPage> {
   final TextEditingController _notesController = TextEditingController();
   final Set<String> _selectedSymptoms = <String>{};
+  late DateTime _selectedDate;
 
   final List<String> _symptomOptions = <String>[
     'Cramps',
@@ -21,6 +23,12 @@ class _SymptomsLogPageState extends State<SymptomsLogPage> {
     'Fatigue',
     'Mood changes',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -42,8 +50,71 @@ class _SymptomsLogPageState extends State<SymptomsLogPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD946A6), width: 1.5),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Logging for:',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD946A6),
+                        ),
+                      ),
+                    ],
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() => _selectedDate = picked);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD946A6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Change',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             const Text(
-              'Which symptoms are you noticing today?',
+              'Which symptoms are you noticing?',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
@@ -120,11 +191,12 @@ class _SymptomsLogPageState extends State<SymptomsLogPage> {
                   final navigator = Navigator.of(context);
                   await FirebaseService.logSymptom(
                     user.uid,
-                    DateTime.now(),
+                    _selectedDate,
                     _selectedSymptoms.toList(),
                   );
+                  final dateStr = DateFormat('MMM d').format(_selectedDate);
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Symptoms saved for today.')),
+                    SnackBar(content: Text('Symptoms saved for $dateStr.')),
                   );
                   navigator.pop();
                 },

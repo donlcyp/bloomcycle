@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../services/firebase_service.dart';
 
 class MoodLogPage extends StatefulWidget {
@@ -12,6 +13,13 @@ class MoodLogPage extends StatefulWidget {
 class _MoodLogPageState extends State<MoodLogPage> {
   final TextEditingController _notesController = TextEditingController();
   int _selectedMood = 3; // 1-5 scale
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -33,8 +41,71 @@ class _MoodLogPageState extends State<MoodLogPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD946A6), width: 1.5),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Logging for:',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD946A6),
+                        ),
+                      ),
+                    ],
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() => _selectedDate = picked);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD946A6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Change',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             const Text(
-              'How are you feeling today?',
+              'How are you feeling?',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
@@ -139,12 +210,13 @@ class _MoodLogPageState extends State<MoodLogPage> {
                   final navigator = Navigator.of(context);
                   await FirebaseService.logMood(
                     user.uid,
-                    DateTime.now(),
+                    _selectedDate,
                     _moodLabel(_selectedMood),
                     _selectedMood,
                   );
+                  final dateStr = DateFormat('MMM d').format(_selectedDate);
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Mood saved for today.')),
+                    SnackBar(content: Text('Mood saved for $dateStr.')),
                   );
                   navigator.pop();
                 },

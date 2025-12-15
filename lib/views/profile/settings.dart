@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../state/user_state.dart';
 import '../../services/firebase_service.dart';
 import '../../models/settings_model.dart';
+import '../settings/notifications_settings.dart';
+import '../health/health_goals.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -42,7 +44,7 @@ class _SettingsPageState extends State<SettingsPage> {
       'profile': {
         // keep profile.cycleLength in sync with settings cycle length
         'cycleLength': updated.cycleSettings.cycleLength,
-      }
+      },
     });
   }
 
@@ -90,13 +92,51 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Notification Settings',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Notification Settings',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsSettingsPage(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD946A6).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.tune, size: 16, color: Color(0xFFD946A6)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Advanced',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFD946A6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 20),
         _buildToggleItem(
@@ -112,11 +152,15 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             });
             final updated = UserState.currentUser.settings.copyWith(
-              notificationSettings: UserState.currentUser.settings.notificationSettings.copyWith(
-                allNotifications: _allNotifications,
-                emailNotifications: _emailNotifications,
-                pushNotifications: _pushNotifications,
-              ),
+              notificationSettings: UserState
+                  .currentUser
+                  .settings
+                  .notificationSettings
+                  .copyWith(
+                    allNotifications: _allNotifications,
+                    emailNotifications: _emailNotifications,
+                    pushNotifications: _pushNotifications,
+                  ),
             );
             _persistSettings(updated);
           },
@@ -134,10 +178,14 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             });
             final updated = UserState.currentUser.settings.copyWith(
-              notificationSettings: UserState.currentUser.settings.notificationSettings.copyWith(
-                allNotifications: _allNotifications,
-                emailNotifications: _emailNotifications,
-              ),
+              notificationSettings: UserState
+                  .currentUser
+                  .settings
+                  .notificationSettings
+                  .copyWith(
+                    allNotifications: _allNotifications,
+                    emailNotifications: _emailNotifications,
+                  ),
             );
             _persistSettings(updated);
           },
@@ -155,10 +203,14 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             });
             final updated = UserState.currentUser.settings.copyWith(
-              notificationSettings: UserState.currentUser.settings.notificationSettings.copyWith(
-                allNotifications: _allNotifications,
-                pushNotifications: _pushNotifications,
-              ),
+              notificationSettings: UserState
+                  .currentUser
+                  .settings
+                  .notificationSettings
+                  .copyWith(
+                    allNotifications: _allNotifications,
+                    pushNotifications: _pushNotifications,
+                  ),
             );
             _persistSettings(updated);
           },
@@ -191,9 +243,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _cycleLength = value.toInt();
             });
             final updated = UserState.currentUser.settings.copyWith(
-              cycleSettings: UserState.currentUser.settings.cycleSettings.copyWith(
-                cycleLength: _cycleLength,
-              ),
+              cycleSettings: UserState.currentUser.settings.cycleSettings
+                  .copyWith(cycleLength: _cycleLength),
             );
             _persistSettings(updated);
           },
@@ -210,9 +261,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _periodLength = value.toInt();
             });
             final updated = UserState.currentUser.settings.copyWith(
-              cycleSettings: UserState.currentUser.settings.cycleSettings.copyWith(
-                periodLength: _periodLength,
-              ),
+              cycleSettings: UserState.currentUser.settings.cycleSettings
+                  .copyWith(periodLength: _periodLength),
             );
             _persistSettings(updated);
           },
@@ -234,6 +284,17 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         const SizedBox(height: 20),
+        _buildActionButton(
+          'Health Goals',
+          'Set and track your wellness targets',
+          Icons.favorite_outline,
+          () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const HealthGoalsPage()),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
         _buildToggleItem('Dark Mode', 'Switch to dark theme', _darkMode, (
           value,
         ) {
@@ -241,9 +302,8 @@ class _SettingsPageState extends State<SettingsPage> {
             _darkMode = value;
           });
           final updated = UserState.currentUser.settings.copyWith(
-            appPreferences: UserState.currentUser.settings.appPreferences.copyWith(
-              darkMode: _darkMode,
-            ),
+            appPreferences: UserState.currentUser.settings.appPreferences
+                .copyWith(darkMode: _darkMode),
           );
           _persistSettings(updated);
         }),
@@ -253,9 +313,8 @@ class _SettingsPageState extends State<SettingsPage> {
             _selectedLanguage = value!;
           });
           final updated = UserState.currentUser.settings.copyWith(
-            appPreferences: UserState.currentUser.settings.appPreferences.copyWith(
-              language: _selectedLanguage,
-            ),
+            appPreferences: UserState.currentUser.settings.appPreferences
+                .copyWith(language: _selectedLanguage),
           );
           _persistSettings(updated);
         }),
@@ -265,9 +324,8 @@ class _SettingsPageState extends State<SettingsPage> {
             _selectedTimeZone = value!;
           });
           final updated = UserState.currentUser.settings.copyWith(
-            appPreferences: UserState.currentUser.settings.appPreferences.copyWith(
-              timeZone: _selectedTimeZone,
-            ),
+            appPreferences: UserState.currentUser.settings.appPreferences
+                .copyWith(timeZone: _selectedTimeZone),
           );
           _persistSettings(updated);
         }),
@@ -408,7 +466,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD946A6).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -435,6 +496,60 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: onChanged,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD946A6).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFFD946A6), size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+          ],
+        ),
       ),
     );
   }

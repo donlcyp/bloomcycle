@@ -269,8 +269,9 @@ class _ProfilePageState extends State<ProfilePage>
                                       height: 80,
                                       loadingBuilder:
                                           (context, child, loadingProgress) {
-                                            if (loadingProgress == null)
+                                            if (loadingProgress == null) {
                                               return child;
+                                            }
                                             return const Center(
                                               child: SizedBox(
                                                 width: 22,

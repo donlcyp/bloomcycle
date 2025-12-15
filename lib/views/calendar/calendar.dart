@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/calendar_data.dart';
+import '../../models/cycle_history.dart';
 import '../../services/firebase_service.dart';
 import '../logs/symptoms_log.dart';
 import '../logs/notes_log.dart';
@@ -22,17 +23,42 @@ class _CalendarPageState extends State<CalendarPage> {
   void initState() {
     super.initState();
     currentMonth = DateTime.now();
+    _loadPeriodData();
+  }
+
+  Future<void> _loadPeriodData() async {
+    // Load period days from CalendarData
+    final periodDays = CalendarData.getPeriodDays();
+    if (periodDays.isNotEmpty) {
+      setState(() {
+        cycleStartDate = periodDays.isNotEmpty 
+            ? periodDays.reduce((a, b) => a.isBefore(b) ? a : b)
+            : null;
+      });
+    }
   }
 
   void _markTodayAsCycleStart() {
     final now = DateTime.now();
+    // Create list of 5 period days starting today
+    final periodDays = <DateTime>[];
+    for (int i = 0; i < 5; i++) {
+      periodDays.add(DateTime(now.year, now.month, now.day + i));
+    }
+    
     setState(() {
       cycleStartDate = DateTime(now.year, now.month, now.day);
     });
+    
+    // Save period days to CalendarData
+    CalendarData.setPeriodDays(periodDays);
+    
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      // Save to Firebase - store the period days and cycle start
       FirebaseService.saveCycleData(user.uid, {
         'cycleStart': cycleStartDate!,
+        'periodDays': periodDays.map((d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}').toList(),
       });
     }
   }
@@ -383,23 +409,38 @@ class _CalendarPageState extends State<CalendarPage> {
       textColor = Colors.white;
     }
     
+    // Check if this date is a logged period day
+    final date = DateTime(currentMonth.year, currentMonth.month, calendarDay.day);
+    final isPeriodDay = CalendarData.isPeriodDay(date);
+    
     // If cycle start is set, show cycle indicators
     if (cycleStartDate != null) {
-      final date = DateTime(currentMonth.year, currentMonth.month, calendarDay.day);
       final daysFromStart = date.difference(cycleStartDate!).inDays;
       
-      if (daysFromStart >= 0 && daysFromStart < 5 && !calendarDay.isToday) {
-        // Period days (first 5 days)
+      // Get average cycle length for accurate ovulation calculation
+      final avgCycleLength = CycleHistoryData.averageCycleLength;
+      final cycleLength = avgCycleLength > 0 ? avgCycleLength : 28; // Default to 28 if no data
+      
+      // Ovulation occurs at: cycleStart + (cycleLength - 14)
+      final ovulationDay = cycleLength - 14;
+      
+      // Fertile window: 5 days before ovulation (Days 8-12 for 28-day cycle)
+      // This is from (ovulationDay - 5) to (ovulationDay - 1)
+      final fertileWindowStart = ovulationDay - 5;
+      final fertileWindowEnd = ovulationDay - 1;
+      
+      // Show period days if they were marked
+      if (isPeriodDay && !calendarDay.isToday) {
         backgroundColor = const Color(0xFFFCE7F3);
         borderColor = const Color(0xFFFCE7F3);
-      } else if (daysFromStart >= 8 && daysFromStart < 13 && !calendarDay.isToday) {
-        // Fertile window
+      } else if (daysFromStart >= fertileWindowStart && daysFromStart <= fertileWindowEnd && !calendarDay.isToday) {
+        // Fertile window (Days 8-12 for 28-day cycle)
         backgroundColor = const Color(0xFFD1FAE5);
         borderColor = const Color(0xFFD1FAE5);
       }
       
-      // Ovulation day (day 14)
-      if (daysFromStart == 14) {
+      // Ovulation day
+      if (daysFromStart == ovulationDay) {
         isOvulationDay = true;
       }
     }

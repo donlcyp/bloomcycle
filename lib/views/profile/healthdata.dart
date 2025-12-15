@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'previous_cycles.dart';
 
 class HealthDataPage extends StatelessWidget {
   const HealthDataPage({super.key});
@@ -21,7 +22,7 @@ class HealthDataPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            _buildCycleTrackingCard(),
+            _buildCycleTrackingCard(context),
             const SizedBox(height: 16),
             _buildWellnessStatsCard(),
             const SizedBox(height: 16),
@@ -32,7 +33,7 @@ class HealthDataPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCycleTrackingCard() {
+  Widget _buildCycleTrackingCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -59,13 +60,30 @@ class HealthDataPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Cycle Tracking',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+              Expanded(
+                child: const Text(
+                  'Cycle Tracking',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_forward,
+                  color: Color(0xFFD946A6),
+                  size: 20,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PreviousCyclesPage(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -75,6 +93,30 @@ class HealthDataPage extends StatelessWidget {
           _buildStatRow('Last Period', 'Dec 15, 2024'),
           const SizedBox(height: 12),
           _buildStatRow('Next Expected', 'Jan 12, 2025'),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PreviousCyclesPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.history, size: 16),
+              label: const Text('Manage Previous Cycles'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD946A6),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
         ],
       ),
     );

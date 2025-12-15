@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firebase_service.dart';
 import '../../state/user_state.dart';
 import '../../models/home_data.dart';
+import '../../models/cycle_history.dart';
 import '../chat/health_chat.dart';
 import '../logs/symptoms_log.dart';
 import '../logs/mood_log.dart';
@@ -33,6 +34,15 @@ class _HomePageState extends State<HomePage> {
       });
       return;
     }
+    
+    // Load cycle history from Firebase
+    try {
+      await CycleHistoryData.loadCycles();
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error loading cycle history: $e');
+    }
+    
     final latest = await FirebaseService.getCycleData(user.uid);
     final cycleStart = latest?['cycleStart'] as DateTime?;
     final cycleLength = UserState.currentUser.profile.cycleLength;

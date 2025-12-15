@@ -134,6 +134,10 @@ class FirebaseService {
     }).toList();
   }
 
+  static Future<void> deleteCycle(String uid, String cycleId) async {
+    await _cyclesRef(uid).doc(cycleId).delete();
+  }
+
   // endregion
 
   // region: Symptoms --------------------------------------------------------

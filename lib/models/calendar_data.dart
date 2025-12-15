@@ -1,3 +1,5 @@
+import 'cycle_history.dart';
+
 class CalendarDay {
   final int day;
   final bool isPeriodDay;
@@ -47,6 +49,8 @@ class CalendarData {
   // In-memory logs for the current session (not persisted)
   static final Map<String, bool> _symptomLogs = <String, bool>{};
   static final Map<String, String> _noteTexts = <String, String>{};
+  // Period days that have been logged
+  static final Map<String, bool> _periodDays = <String, bool>{};
 
   static String _dateKey(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -59,6 +63,42 @@ class CalendarData {
   static void logNoteForDate(DateTime date, String text) {
     final key = _dateKey(date);
     _noteTexts[key] = text;
+  }
+
+  // Period days management
+  static void logPeriodDay(DateTime date) {
+    _periodDays[_dateKey(date)] = true;
+  }
+
+  static void removePeriodDay(DateTime date) {
+    _periodDays.remove(_dateKey(date));
+  }
+
+  static bool isPeriodDay(DateTime date) {
+    return _periodDays.containsKey(_dateKey(date));
+  }
+
+  static void setPeriodDays(List<DateTime> dates) {
+    _periodDays.clear();
+    for (final date in dates) {
+      _periodDays[_dateKey(date)] = true;
+    }
+  }
+
+  static List<DateTime> getPeriodDays() {
+    final result = <DateTime>[];
+    _periodDays.forEach((key, value) {
+      final parts = key.split('-');
+      if (parts.length == 3) {
+        final year = int.tryParse(parts[0]);
+        final month = int.tryParse(parts[1]);
+        final day = int.tryParse(parts[2]);
+        if (year != null && month != null && day != null) {
+          result.add(DateTime(year, month, day));
+        }
+      }
+    });
+    return result;
   }
 
   static bool hasSymptomsForDate(DateTime date) {
@@ -89,6 +129,26 @@ class CalendarData {
     return result;
   }
 
+  static bool isPeriodDayFromCycles(DateTime date) {
+    // Check if date is a period day from any recorded cycle
+    // First check locally stored period days
+    if (isPeriodDay(date)) {
+      return true;
+    }
+
+    // Check against all cycles in history
+    final allPeriodDays = CycleHistoryData.getAllPeriodDaysFromCycles();
+    for (final periodDate in allPeriodDays) {
+      if (periodDate.year == date.year &&
+          periodDate.month == date.month &&
+          periodDate.day == date.day) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   static List<CalendarDay> getCalendarDays() {
     // Generate empty calendar days - no cycle indicators by default
     final baseDays = <CalendarDay>[];
@@ -109,10 +169,11 @@ class CalendarData {
       final isToday = date.day == DateTime.now().day &&
           date.month == DateTime.now().month &&
           date.year == DateTime.now().year;
+      final isPeriod = isPeriodDayFromCycles(date);
 
       return CalendarDay(
         day: day.day,
-        isPeriodDay: false,
+        isPeriodDay: isPeriod,
         isFertileWindow: false,
         isToday: isToday,
         hasOvulation: false,

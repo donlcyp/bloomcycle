@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../../services/firebase_service.dart';
 import '../../state/user_state.dart';
 import '../nav/nav.dart';
-import '../../main.dart';
 
 class SetupStep4 extends StatefulWidget {
   const SetupStep4({super.key});
@@ -21,11 +20,13 @@ class _SetupStep4State extends State<SetupStep4> {
   Future<bool> _completeOnboarding({double? weightKg}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      appScaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(
-          content: Text('You need to be signed in to continue.'),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be signed in to continue.'),
+          ),
+        );
+      }
       return false;
     }
 
@@ -37,20 +38,24 @@ class _SetupStep4State extends State<SetupStep4> {
       });
       return true;
     } on FirebaseException catch (e) {
-      appScaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text(
-            e.code == 'permission-denied'
-                ? 'We could not save your profile. Please check Firestore rules.'
-                : e.message ?? 'Failed to complete onboarding.',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.code == 'permission-denied'
+                  ? 'We could not save your profile. Please check Firestore rules.'
+                  : e.message ?? 'Failed to complete onboarding.',
+            ),
           ),
-        ),
-      );
+        );
+      }
       return false;
     } catch (e) {
-      appScaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(content: Text('Something went wrong. Try again.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Something went wrong. Try again.')),
+        );
+      }
       return false;
     }
   }
@@ -206,9 +211,9 @@ class _SetupStep4State extends State<SetupStep4> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                    boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -494,9 +499,9 @@ class _SetupStep4State extends State<SetupStep4> {
                                           return;
                                         }
 
-                                        if (!context.mounted) return;
-                                        appNavigatorKey.currentState
-                                            ?.pushAndRemoveUntil(
+                                        Navigator.of(
+                                          context,
+                                        ).pushAndRemoveUntil(
                                           MaterialPageRoute(
                                             builder: (context) =>
                                                 const NavBar(),
@@ -557,9 +562,7 @@ class _SetupStep4State extends State<SetupStep4> {
                                     return;
                                   }
 
-                                  if (!context.mounted) return;
-                                  appNavigatorKey.currentState
-                                      ?.pushAndRemoveUntil(
+                                  Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                       builder: (context) => const NavBar(),
                                     ),

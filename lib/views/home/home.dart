@@ -132,6 +132,7 @@ class _HomePageState extends State<HomePage> {
               bottom: bottomPadding,
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(theme, isLarge),
@@ -443,53 +444,53 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(left: media.size.width * 0.02),
-          child: Text(
-            'Explore Features',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          'Explore Features',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: media.size.height * 0.02),
-        Row(
-          children: [
-            Expanded(
-              child: _buildFeatureCard(
-                theme,
-                'Cycle Insights',
-                'View patterns & trends',
-                Icons.analytics_outlined,
-                const Color(0xFFFF6B6B),
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const CycleInsightsPage(),
-                    ),
-                  );
-                },
+        const SizedBox(height: 16),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildFeatureCard(
+                  theme,
+                  'Cycle Insights',
+                  'View patterns & trends',
+                  Icons.analytics_outlined,
+                  const Color(0xFFFF6B6B),
+                  () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CycleInsightsPage(),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildFeatureCard(
-                theme,
-                'Health Goals',
-                'Track wellness',
-                Icons.favorite_outline,
-                const Color(0xFF51CF66),
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const HealthGoalsPage(),
-                    ),
-                  );
-                },
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildFeatureCard(
+                  theme,
+                  'Health Goals',
+                  'Track wellness',
+                  Icons.favorite_outline,
+                  const Color(0xFF51CF66),
+                  () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const HealthGoalsPage(),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -561,53 +562,53 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(left: media.size.width * 0.02),
-          child: Text(
-            'More Features',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          'More Features',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: media.size.height * 0.02),
-        Row(
-          children: [
-            Expanded(
-              child: _buildFeatureCard(
-                theme,
-                'Wellness Tips',
-                'Phase-specific advice',
-                Icons.lightbulb_outline,
-                const Color(0xFFFFD93D),
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const PersonalizedTipsPage(),
-                    ),
-                  );
-                },
+        const SizedBox(height: 16),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildFeatureCard(
+                  theme,
+                  'Wellness Tips',
+                  'Phase-specific advice',
+                  Icons.lightbulb_outline,
+                  const Color(0xFFFFD93D),
+                  () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PersonalizedTipsPage(),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildFeatureCard(
-                theme,
-                'Community',
-                'Surveys & challenges',
-                Icons.people_outline,
-                const Color(0xFF9C27B0),
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const CommunityHubPage(),
-                    ),
-                  );
-                },
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildFeatureCard(
+                  theme,
+                  'Community',
+                  'Surveys & challenges',
+                  Icons.people_outline,
+                  const Color(0xFF9C27B0),
+                  () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CommunityHubPage(),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -618,17 +619,14 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(left: media.size.width * 0.02),
-          child: Text(
-            'Quick Actions',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          'Quick Actions',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: media.size.height * 0.02),
+        const SizedBox(height: 16),
         ...actions.asMap().entries.map((entry) {
           final action = entry.value;
           final showPrediction = entry.key > 0;
@@ -769,7 +767,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTodaysInsights(ThemeData theme, MediaQueryData media) {
     return _surfaceCard(
-      padding: EdgeInsets.all(media.size.width * 0.05),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -780,7 +778,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: media.size.height * 0.015),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -840,7 +838,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTodaysTip(ThemeData theme, MediaQueryData media) {
     return _surfaceCard(
-      padding: EdgeInsets.all(media.size.width * 0.05),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -851,7 +849,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: media.size.height * 0.015),
+          const SizedBox(height: 16),
           _buildTipRow(
             theme,
             HomeData.todaysTip.title,
@@ -915,9 +913,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHealthTips(ThemeData theme, MediaQueryData media) {
-    final padding = ResponsiveHelper.getHorizontalPadding(context);
     return _surfaceCard(
-      padding: EdgeInsets.all(padding),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -928,7 +925,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: media.size.height * 0.015),
+          const SizedBox(height: 16),
           ...HomeData.healthTips.map((tip) {
             final int? mapped = HomeData.healthTipColors[tip.category];
             final Color color = mapped != null
@@ -937,14 +934,7 @@ class _HomePageState extends State<HomePage> {
             final iconName =
                 HomeData.healthTipIcons[tip.category] ?? 'favorite';
             return Padding(
-              padding: EdgeInsets.only(
-                bottom: ResponsiveHelper.getSpacing(
-                  context,
-                  small: 10,
-                  medium: 12,
-                  large: 14,
-                ),
-              ),
+              padding: const EdgeInsets.only(bottom: 12),
               child: _buildHealthTipCard(
                 theme,
                 tip.title,
@@ -955,14 +945,6 @@ class _HomePageState extends State<HomePage> {
               ),
             );
           }).toList(),
-          SizedBox(
-            height: ResponsiveHelper.getSpacing(
-              context,
-              small: 8,
-              medium: 12,
-              large: 16,
-            ),
-          ),
         ],
       ),
     );
@@ -976,9 +958,8 @@ class _HomePageState extends State<HomePage> {
     Color backgroundColor,
     Color iconColor,
   ) {
-    final padding = ResponsiveHelper.getHorizontalPadding(context);
     return Container(
-      padding: EdgeInsets.all(padding),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
@@ -999,14 +980,7 @@ class _HomePageState extends State<HomePage> {
             ),
             child: Icon(icon, color: Colors.white, size: 20),
           ),
-          SizedBox(
-            width: ResponsiveHelper.getSpacing(
-              context,
-              small: 10,
-              medium: 12,
-              large: 12,
-            ),
-          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1016,33 +990,14 @@ class _HomePageState extends State<HomePage> {
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
-                    fontSize: ResponsiveHelper.getFontSize(
-                      context,
-                      small: 13,
-                      medium: 14,
-                      large: 15,
-                    ),
                   ),
                 ),
-                SizedBox(
-                  height: ResponsiveHelper.getSpacing(
-                    context,
-                    small: 3,
-                    medium: 4,
-                    large: 4,
-                  ),
-                ),
+                const SizedBox(height: 4),
                 Text(
                   description,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textMuted,
                     height: 1.4,
-                    fontSize: ResponsiveHelper.getFontSize(
-                      context,
-                      small: 11,
-                      medium: 12,
-                      large: 13,
-                    ),
                   ),
                 ),
               ],

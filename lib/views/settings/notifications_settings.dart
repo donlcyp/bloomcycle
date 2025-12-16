@@ -67,6 +67,7 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
           bottom: ResponsiveHelper.getVerticalPadding(context) + 16,
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildGlobalToggle(),

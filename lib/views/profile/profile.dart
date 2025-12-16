@@ -617,10 +617,15 @@ class _ProfilePageState extends State<ProfilePage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                value,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () async {
                   if (label == 'Location') {

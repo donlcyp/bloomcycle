@@ -69,6 +69,7 @@ class _HealthGoalsPageState extends State<HealthGoalsPage> {
           bottom: ResponsiveHelper.getVerticalPadding(context) + 16,
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildWaterIntakeGoal(theme),

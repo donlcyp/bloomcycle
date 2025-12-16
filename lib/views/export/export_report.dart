@@ -109,6 +109,7 @@ class _ExportReportPageState extends State<ExportReportPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildExportOptions(),

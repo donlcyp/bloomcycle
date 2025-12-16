@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import '../../services/firebase_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -9,8 +12,60 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedTab = 0;
+  bool _isLoading = true;
+  String? _currentUserId;
+
+  // Data from Firebase
+  Map<String, int> _userStats = {};
+  List<Map<String, dynamic>> _recentUsers = [];
+  List<Map<String, dynamic>> _allUsers = [];
+  List<Map<String, dynamic>> _recentActivities = [];
+  Map<String, int> _dailyActiveUsers = {};
+  int _totalDataRecords = 0;
 
   final List<String> _tabs = ['Overview', 'Users', 'Analytics'];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // First try to get current user's data (this should always work)
+      final uid = _currentUserId;
+      
+      final results = await Future.wait([
+        FirebaseService.getUserStats(currentUserId: uid),
+        FirebaseService.getRecentUsers(limit: 5, currentUserId: uid),
+        FirebaseService.getAllUsers(currentUserId: uid),
+        FirebaseService.getRecentActivities(limit: 10),
+        FirebaseService.getDailyActiveUsers(days: 7, currentUserId: uid),
+        FirebaseService.getTotalDataRecords(currentUserId: uid),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _userStats = results[0] as Map<String, int>;
+          _recentUsers = results[1] as List<Map<String, dynamic>>;
+          _allUsers = results[2] as List<Map<String, dynamic>>;
+          _recentActivities = results[3] as List<Map<String, dynamic>>;
+          _dailyActiveUsers = results[4] as Map<String, int>;
+          _totalDataRecords = results[5] as int;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        print('Admin dashboard error: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,8 +113,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             child: IconButton(
               icon: const Icon(Icons.logout, color: Color(0xFFD946A6)),
-              onPressed: () {
-                Navigator.pop(context);
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                }
               },
             ),
           ),
@@ -116,19 +174,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           // Tab Content
           Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.04,
-                  vertical: screenHeight * 0.02,
-                ),
-                child: _buildTabContent(
-                  _selectedTab,
-                  screenWidth,
-                  screenHeight,
-                ),
-              ),
-            ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFD946A6),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: const Color(0xFFD946A6),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenHeight * 0.02,
+                        ),
+                        child: _buildTabContent(
+                          _selectedTab,
+                          screenWidth,
+                          screenHeight,
+                        ),
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -154,6 +223,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   // Overview Tab
   Widget _buildOverviewTab(double screenWidth, double screenHeight) {
+    final totalUsers = _userStats['totalUsers'] ?? 0;
+    final activeToday = _userStats['activeToday'] ?? 0;
+    final healthPercent = totalUsers > 0 ? (activeToday / totalUsers * 100).clamp(0, 100) : 0;
+    
     return Column(
       children: [
         // System Metrics
@@ -165,7 +238,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: 0.85,
+                  value: healthPercent / 100,
                   minHeight: 8,
                   backgroundColor: Colors.grey[300],
                   valueColor: const AlwaysStoppedAnimation<Color>(
@@ -178,12 +251,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Status: Healthy',
+                    'Status: ${totalUsers > 0 ? "Healthy" : "No Data"}',
                     style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                   ),
                   Text(
-                    'Uptime: 99.8%',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    'Activity: ${healthPercent.toStringAsFixed(1)}%',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     'Response: Good',
@@ -196,8 +269,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 children: [
                   Expanded(
                     child: _buildMetricBox(
-                      '1,245',
-                      'Active\nUsers',
+                      _formatNumber(totalUsers),
+                      'Total\nUsers',
                       const Color(0xFFFF6B6B),
                       screenHeight,
                     ),
@@ -205,7 +278,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: _buildMetricBox(
-                      '892',
+                      _formatNumber(_totalDataRecords),
                       'Data\nRecords',
                       const Color(0xFF4DABF7),
                       screenHeight,
@@ -214,8 +287,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: _buildMetricBox(
-                      '98.5%',
-                      'System\nHealth',
+                      _formatNumber(activeToday),
+                      'Active\nToday',
                       const Color(0xFF10B981),
                       screenHeight,
                     ),
@@ -236,8 +309,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  String _formatNumber(int number) {
+    if (number >= 1000000) {
+      return '${(number / 1000000).toStringAsFixed(1)}M';
+    } else if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
+    }
+    return number.toString();
+  }
+
   // Users Tab
   Widget _buildUsersTab(double screenWidth, double screenHeight) {
+    final totalUsers = _userStats['totalUsers'] ?? 0;
+    final activeToday = _userStats['activeToday'] ?? 0;
+    final newThisWeek = _userStats['newThisWeek'] ?? 0;
+    final inactiveUsers = totalUsers - activeToday;
+    
     return Column(
       children: [
         _buildCard(
@@ -245,15 +332,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
           subtitle: 'User management and analytics',
           child: Column(
             children: [
-              _buildStatRow('Total Users', '1,245', Colors.blue),
+              _buildStatRow('Total Users', _formatNumber(totalUsers), Colors.blue),
               SizedBox(height: screenHeight * 0.015),
-              _buildStatRow('Active Today', '312', Colors.green),
+              _buildStatRow('Active Today', _formatNumber(activeToday), Colors.green),
               SizedBox(height: screenHeight * 0.015),
-              _buildStatRow('New Registrations', '45', Colors.orange),
+              _buildStatRow('New This Week', _formatNumber(newThisWeek), Colors.orange),
               SizedBox(height: screenHeight * 0.015),
-              _buildStatRow('Inactive Users', '89', Colors.red),
-              SizedBox(height: screenHeight * 0.015),
-              _buildStatRow('Premium Users', '234', const Color(0xFFD946A6)),
+              _buildStatRow('Inactive Users', _formatNumber(inactiveUsers.clamp(0, totalUsers)), Colors.red),
             ],
           ),
           screenHeight: screenHeight,
@@ -265,17 +350,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             children: [
               _buildActionButton(
-                'View All Users',
+                'View All Users (${_allUsers.length})',
                 Icons.people,
                 Colors.blue,
                 screenWidth,
+                onTap: () => _showAllUsersDialog(),
               ),
               SizedBox(height: screenHeight * 0.01),
               _buildActionButton(
-                'Send Announcement',
-                Icons.announcement,
+                'Refresh Data',
+                Icons.refresh,
                 Colors.orange,
                 screenWidth,
+                onTap: _loadData,
               ),
               SizedBox(height: screenHeight * 0.01),
               _buildActionButton(
@@ -283,44 +370,245 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Icons.download,
                 Colors.green,
                 screenWidth,
-              ),
-              SizedBox(height: screenHeight * 0.01),
-              _buildActionButton(
-                'Ban User',
-                Icons.block,
-                Colors.red,
-                screenWidth,
+                onTap: () => _showExportDialog(),
               ),
             ],
           ),
           screenHeight: screenHeight,
         ),
+        SizedBox(height: screenHeight * 0.02),
+        // All Users List
+        _buildAllUsersCard(screenWidth, screenHeight),
       ],
+    );
+  }
+
+  void _showAllUsersDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('All Users'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: _allUsers.isEmpty
+              ? const Center(child: Text('No users found'))
+              : ListView.builder(
+                  itemCount: _allUsers.length,
+                  itemBuilder: (context, index) {
+                    final user = _allUsers[index];
+                    final name = user['displayName'] ?? user['name'] ?? 'Unknown';
+                    final email = user['email'] ?? 'No email';
+                    final createdAt = user['createdAt'] as DateTime?;
+                    
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFFD946A6),
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      title: Text(name),
+                      subtitle: Text(email),
+                      trailing: createdAt != null
+                          ? Text(
+                              DateFormat('MMM d, y').format(createdAt),
+                              style: const TextStyle(fontSize: 10, color: Colors.grey),
+                            )
+                          : null,
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExportDialog() {
+    final userDataStr = _allUsers.map((u) {
+      final name = u['displayName'] ?? u['name'] ?? 'Unknown';
+      final email = u['email'] ?? 'No email';
+      return '$name, $email';
+    }).join('\n');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('User Data Export'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total Users: ${_allUsers.length}'),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectableText(
+                  userDataStr.isEmpty ? 'No data to export' : userDataStr,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllUsersCard(double screenWidth, double screenHeight) {
+    return _buildCard(
+      title: 'All Users',
+      subtitle: '${_allUsers.length} registered users',
+      child: _allUsers.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No users found', style: TextStyle(color: Colors.grey)),
+              ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _allUsers.length > 10 ? 10 : _allUsers.length,
+              itemBuilder: (context, index) {
+                final user = _allUsers[index];
+                final name = user['displayName'] ?? user['name'] ?? 'Unknown User';
+                final email = user['email'] ?? 'No email';
+                final createdAt = user['createdAt'] as DateTime?;
+                final timeAgo = createdAt != null ? _getTimeAgo(createdAt) : 'Unknown';
+                
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD946A6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.04),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                email,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          timeAgo,
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    if (index < (_allUsers.length > 10 ? 9 : _allUsers.length - 1))
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                        child: Divider(color: Colors.grey[200]),
+                      ),
+                  ],
+                );
+              },
+            ),
+      screenHeight: screenHeight,
     );
   }
 
   // Analytics Tab
   Widget _buildAnalyticsTab(double screenWidth, double screenHeight) {
+    final maxValue = _dailyActiveUsers.values.isEmpty 
+        ? 1 
+        : _dailyActiveUsers.values.reduce((a, b) => a > b ? a : b);
+    final chartMax = (maxValue * 1.2).ceil(); // Add 20% padding
+    
     return Column(
       children: [
         _buildCard(
           title: 'Daily Active Users',
           subtitle: 'Last 7 days',
+          child: _dailyActiveUsers.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text('No activity data available', style: TextStyle(color: Colors.grey)),
+                  ),
+                )
+              : Column(
+                  children: _dailyActiveUsers.entries.map((entry) {
+                    return Column(
+                      children: [
+                        _buildChartBar(
+                          entry.key,
+                          entry.value,
+                          chartMax > 0 ? chartMax : 1,
+                          Colors.blue,
+                          screenWidth,
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                      ],
+                    );
+                  }).toList(),
+                ),
+          screenHeight: screenHeight,
+        ),
+        SizedBox(height: screenHeight * 0.02),
+        _buildCard(
+          title: 'Data Summary',
+          subtitle: 'Overall statistics',
           child: Column(
             children: [
-              _buildChartBar('Mon', 245, 300, Colors.blue, screenWidth),
-              SizedBox(height: screenHeight * 0.01),
-              _buildChartBar('Tue', 312, 300, Colors.blue, screenWidth),
-              SizedBox(height: screenHeight * 0.01),
-              _buildChartBar('Wed', 289, 300, Colors.blue, screenWidth),
-              SizedBox(height: screenHeight * 0.01),
-              _buildChartBar('Thu', 335, 300, Colors.blue, screenWidth),
-              SizedBox(height: screenHeight * 0.01),
-              _buildChartBar('Fri', 298, 300, Colors.blue, screenWidth),
-              SizedBox(height: screenHeight * 0.01),
-              _buildChartBar('Sat', 267, 300, Colors.blue, screenWidth),
-              SizedBox(height: screenHeight * 0.01),
-              _buildChartBar('Sun', 241, 300, Colors.blue, screenWidth),
+              _buildStatRow('Total Users', _formatNumber(_userStats['totalUsers'] ?? 0), Colors.blue),
+              SizedBox(height: screenHeight * 0.015),
+              _buildStatRow('Total Data Records', _formatNumber(_totalDataRecords), const Color(0xFF4DABF7)),
+              SizedBox(height: screenHeight * 0.015),
+              _buildStatRow('Active Today', _formatNumber(_userStats['activeToday'] ?? 0), Colors.green),
+              SizedBox(height: screenHeight * 0.015),
+              _buildStatRow('New This Week', _formatNumber(_userStats['newThisWeek'] ?? 0), Colors.orange),
             ],
           ),
           screenHeight: screenHeight,
@@ -438,154 +726,173 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildRecentUsersCard(double screenWidth, double screenHeight) {
-    final recentUsers = [
-      {
-        'name': 'Sarah Johnson',
-        'email': 'sarah@example.com',
-        'joined': '2 hours ago',
-      },
-      {
-        'name': 'Emily Chen',
-        'email': 'emily@example.com',
-        'joined': '5 hours ago',
-      },
-      {
-        'name': 'Alex Martinez',
-        'email': 'alex@example.com',
-        'joined': '1 day ago',
-      },
-    ];
-
     return _buildCard(
       title: 'Recent Users',
       subtitle: 'Latest registrations',
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: recentUsers.length,
-        itemBuilder: (context, index) {
-          final user = recentUsers[index];
-          return Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFD946A6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        user['name']![0],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.04),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      child: _recentUsers.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No recent users', style: TextStyle(color: Colors.grey)),
+              ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _recentUsers.length,
+              itemBuilder: (context, index) {
+                final user = _recentUsers[index];
+                final name = user['displayName'] ?? user['name'] ?? 'Unknown User';
+                final email = user['email'] ?? 'No email';
+                final createdAt = user['createdAt'] as DateTime?;
+                final timeAgo = createdAt != null ? _getTimeAgo(createdAt) : 'Unknown';
+                
+                return Column(
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          user['name']!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD946A6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.04),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                email,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
                         Text(
-                          user['email']!,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey,
-                          ),
+                          timeAgo,
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                       ],
                     ),
-                  ),
-                  Text(
-                    user['joined']!,
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                ],
-              ),
-              if (index < recentUsers.length - 1)
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
-                  child: Divider(color: Colors.grey[200]),
-                ),
-            ],
-          );
-        },
-      ),
+                    if (index < _recentUsers.length - 1)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                        child: Divider(color: Colors.grey[200]),
+                      ),
+                  ],
+                );
+              },
+            ),
       screenHeight: screenHeight,
     );
   }
 
-  Widget _buildActivityLogCard(double screenWidth, double screenHeight) {
-    final activities = [
-      {'action': 'User registered', 'time': '10:30 AM'},
-      {'action': 'Data export completed', 'time': '10:15 AM'},
-      {'action': 'System backup', 'time': '09:45 AM'},
-      {'action': 'User login', 'time': '09:20 AM'},
-    ];
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return DateFormat('MMM d').format(dateTime);
+    }
+  }
 
+  Widget _buildActivityLogCard(double screenWidth, double screenHeight) {
     return _buildCard(
       title: 'Activity Log',
       subtitle: 'Recent activities',
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: activities.length,
-        itemBuilder: (context, index) {
-          final activity = activities[index];
-          return Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFD946A6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.04),
-                  Expanded(
-                    child: Text(
-                      activity['action']!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    activity['time']!,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                ],
+      child: _recentActivities.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No recent activities', style: TextStyle(color: Colors.grey)),
               ),
-              if (index < activities.length - 1)
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
-                  child: Divider(color: Colors.grey[200]),
-                ),
-            ],
-          );
-        },
-      ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _recentActivities.length,
+              itemBuilder: (context, index) {
+                final activity = _recentActivities[index];
+                final action = activity['action'] ?? 'Unknown action';
+                final timestamp = activity['timestamp'] as DateTime?;
+                final time = timestamp != null 
+                    ? DateFormat('h:mm a').format(timestamp)
+                    : 'Unknown';
+                
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD946A6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.04),
+                        Expanded(
+                          child: Text(
+                            action,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          time,
+                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    if (index < _recentActivities.length - 1)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+                        child: Divider(color: Colors.grey[200]),
+                      ),
+                  ],
+                );
+              },
+            ),
       screenHeight: screenHeight,
     );
   }
@@ -594,10 +901,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     String label,
     IconData icon,
     Color color,
-    double screenWidth,
-  ) {
+    double screenWidth, {
+    VoidCallback? onTap,
+  }) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(

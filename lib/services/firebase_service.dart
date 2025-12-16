@@ -91,29 +91,38 @@ class FirebaseService {
   static CollectionReference<Map<String, dynamic>> _cyclesRef(String uid) =>
       _userCollection().doc(uid).collection('cycles');
 
+  /// Reference to the current active cycle document
+  static DocumentReference<Map<String, dynamic>> _currentCycleRef(String uid) =>
+      _cyclesRef(uid).doc('current');
+
   static Future<void> saveCycleData(
     String uid,
     Map<String, dynamic> cycleData,
   ) async {
-    final cycles = _cyclesRef(uid);
-    final cycleId = (cycleData['id'] ?? cycleData['cycleId']) as String?;
     final payload = _serialize({
       ...cycleData,
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    if (cycleId != null && cycleId.isNotEmpty) {
-      await cycles.doc(cycleId).set(payload, SetOptions(merge: true));
-    } else {
-      await cycles.add({...payload, 'createdAt': FieldValue.serverTimestamp()});
-    }
+    // Always save to the "current" document for the active cycle
+    await _currentCycleRef(uid).set(payload, SetOptions(merge: true));
   }
 
-  /// Returns the latest cycle entry for the user, if available.
+  /// Returns the current active cycle for the user, if available.
   static Future<Map<String, dynamic>?> getCycleData(String uid) async {
-    final snapshot = await _cyclesRef(
-      uid,
-    ).orderBy('cycleStart', descending: true).limit(1).get();
+    // First try to get the "current" document
+    final currentDoc = await _currentCycleRef(uid).get();
+    if (currentDoc.exists) {
+      final data = currentDoc.data()!;
+      data['id'] = currentDoc.id;
+      return _deserialize(data);
+    }
+    
+    // Fallback: check for legacy documents (ordered by updatedAt to get most recent)
+    final snapshot = await _cyclesRef(uid)
+        .orderBy('updatedAt', descending: true)
+        .limit(1)
+        .get();
 
     if (snapshot.docs.isEmpty) return null;
     final doc = snapshot.docs.first;
@@ -278,6 +287,286 @@ class FirebaseService {
       data['id'] = doc.id;
       return _deserialize(data) as Map<String, dynamic>;
     }).toList();
+  }
+
+  // endregion
+
+  // region: Admin operations ------------------------------------------------
+
+  /// Get all users for admin dashboard (falls back to current user if no permission)
+  static Future<List<Map<String, dynamic>>> getAllUsers({String? currentUserId}) async {
+    try {
+      final snapshot = await _userCollection()
+          .orderBy('createdAt', descending: true)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return _deserialize(data) as Map<String, dynamic>;
+      }).toList();
+    } catch (e) {
+      print('Admin access denied, falling back to current user: $e');
+      // Fall back to current user only
+      if (currentUserId != null) {
+        final userData = await getUser(currentUserId);
+        if (userData != null) return [userData];
+      }
+      return [];
+    }
+  }
+
+  /// Get user count statistics
+  static Future<Map<String, int>> getUserStats({String? currentUserId}) async {
+    try {
+      final allUsers = await _userCollection().get();
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final weekAgo = now.subtract(const Duration(days: 7));
+      
+      int totalUsers = allUsers.docs.length;
+      int activeToday = 0;
+      int newThisWeek = 0;
+      
+      for (var doc in allUsers.docs) {
+        final data = doc.data();
+        
+        // Check if user was active today (updatedAt is today)
+        if (data['updatedAt'] != null) {
+          final updatedAt = data['updatedAt'] is Timestamp 
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : data['updatedAt'] as DateTime?;
+          if (updatedAt != null && updatedAt.isAfter(todayStart)) {
+            activeToday++;
+          }
+        }
+        
+        // Check if user registered this week
+        if (data['createdAt'] != null) {
+          final createdAt = data['createdAt'] is Timestamp 
+              ? (data['createdAt'] as Timestamp).toDate()
+              : data['createdAt'] as DateTime?;
+          if (createdAt != null && createdAt.isAfter(weekAgo)) {
+            newThisWeek++;
+          }
+        }
+      }
+      
+      return {
+        'totalUsers': totalUsers,
+        'activeToday': activeToday,
+        'newThisWeek': newThisWeek,
+      };
+    } catch (e) {
+      print('Error fetching user stats: $e');
+      // Fall back to current user stats
+      if (currentUserId != null) {
+        final userData = await getUser(currentUserId);
+        if (userData != null) {
+          return {
+            'totalUsers': 1,
+            'activeToday': 1,
+            'newThisWeek': 1,
+          };
+        }
+      }
+      return {
+        'totalUsers': 0,
+        'activeToday': 0,
+        'newThisWeek': 0,
+      };
+    }
+  }
+
+  /// Get recent users (last N registrations)
+  static Future<List<Map<String, dynamic>>> getRecentUsers({int limit = 10, String? currentUserId}) async {
+    try {
+      final snapshot = await _userCollection()
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return _deserialize(data) as Map<String, dynamic>;
+      }).toList();
+    } catch (e) {
+      print('Error fetching recent users: $e');
+      // Fall back to current user
+      if (currentUserId != null) {
+        final userData = await getUser(currentUserId);
+        if (userData != null) return [userData];
+      }
+      return [];
+    }
+  }
+
+  /// Get daily active users for the last N days
+  static Future<Map<String, int>> getDailyActiveUsers({int days = 7, String? currentUserId}) async {
+    final result = <String, int>{};
+    final now = DateTime.now();
+    
+    // Initialize all days with 0
+    for (int i = days - 1; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dayName = DateFormat('E').format(date); // Mon, Tue, etc.
+      result[dayName] = 0;
+    }
+    
+    try {
+      // Get all users and count by updatedAt date
+      final snapshot = await _userCollection().get();
+      
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['updatedAt'] != null) {
+          final updatedAt = data['updatedAt'] is Timestamp 
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : data['updatedAt'] as DateTime?;
+          
+          if (updatedAt != null) {
+            final daysAgo = now.difference(updatedAt).inDays;
+            if (daysAgo < days) {
+              final dayName = DateFormat('E').format(updatedAt);
+              result[dayName] = (result[dayName] ?? 0) + 1;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching daily active users: $e');
+      // Fall back - show current user's activity for today
+      if (currentUserId != null) {
+        final todayName = DateFormat('E').format(now);
+        result[todayName] = 1;
+      }
+    }
+    
+    return result;
+  }
+
+  /// Get total data records count (cycles, symptoms, notes, moods)
+  static Future<int> getTotalDataRecords({String? currentUserId}) async {
+    // If we have current user ID, get their data directly (most reliable)
+    if (currentUserId != null) {
+      try {
+        int total = 0;
+        
+        final cycles = await _cyclesRef(currentUserId).get();
+        total += cycles.docs.length;
+        
+        final symptoms = await _symptomsRef(currentUserId).get();
+        total += symptoms.docs.length;
+        
+        final notes = await _notesRef(currentUserId).get();
+        total += notes.docs.length;
+        
+        final moods = await _moodsRef(currentUserId).get();
+        total += moods.docs.length;
+        
+        return total;
+      } catch (e) {
+        print('Error getting current user data records: $e');
+        return 0;
+      }
+    }
+    
+    // Fallback: try to get all users' data (admin mode)
+    try {
+      int total = 0;
+      
+      final users = await _userCollection().get();
+      
+      for (var userDoc in users.docs) {
+        final uid = userDoc.id;
+        
+        try {
+          final cycles = await _cyclesRef(uid).get();
+          total += cycles.docs.length;
+          
+          final symptoms = await _symptomsRef(uid).get();
+          total += symptoms.docs.length;
+          
+          final notes = await _notesRef(uid).get();
+          total += notes.docs.length;
+          
+          final moods = await _moodsRef(uid).get();
+          total += moods.docs.length;
+        } catch (_) {}
+      }
+      
+      return total;
+    } catch (e) {
+      print('Error fetching total data records: $e');
+      return 0;
+    }
+  }
+
+  /// Log admin activity
+  static Future<void> logAdminActivity(String action) async {
+    try {
+      await _firestore.collection('adminLogs').add({
+        'action': action,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error logging admin activity: $e');
+    }
+  }
+
+  /// Get recent admin activities
+  static Future<List<Map<String, dynamic>>> getRecentActivities({int limit = 10}) async {
+    try {
+      final snapshot = await _firestore.collection('adminLogs')
+          .orderBy('timestamp', descending: true)
+          .limit(limit)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return _deserialize(data) as Map<String, dynamic>;
+      }).toList();
+    } catch (e) {
+      print('Error fetching recent activities: $e');
+      return [];
+    }
+  }
+
+  /// Delete a user and all their data
+  static Future<void> deleteUserAndData(String uid) async {
+    try {
+      // Delete subcollections first
+      final cycles = await _cyclesRef(uid).get();
+      for (var doc in cycles.docs) {
+        await doc.reference.delete();
+      }
+      
+      final symptoms = await _symptomsRef(uid).get();
+      for (var doc in symptoms.docs) {
+        await doc.reference.delete();
+      }
+      
+      final notes = await _notesRef(uid).get();
+      for (var doc in notes.docs) {
+        await doc.reference.delete();
+      }
+      
+      final moods = await _moodsRef(uid).get();
+      for (var doc in moods.docs) {
+        await doc.reference.delete();
+      }
+      
+      // Finally delete the user document
+      await _userCollection().doc(uid).delete();
+      
+      // Log the activity
+      await logAdminActivity('User deleted: $uid');
+    } catch (e) {
+      print('Error deleting user: $e');
+      rethrow;
+    }
   }
 
   // endregion

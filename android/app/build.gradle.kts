@@ -40,6 +40,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Specify CMake version compatible with newer NDK
+    externalNativeBuild {
+        cmake {
+            version = "4.1.2"
+        }
+    }
 }
 
 flutter {

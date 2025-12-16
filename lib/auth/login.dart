@@ -646,6 +646,157 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Future<bool> _showTermsAcceptanceDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool acceptedTerms = false;
+        bool acceptedPrivacy = false;
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.description_outlined,
+                      color: Color(0xFFEC4899),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Terms & Conditions',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Welcome to BloomCycle!\n\nBefore you continue, please review and accept our terms and conditions.',
+                      style: TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: acceptedTerms,
+                            activeColor: const Color(0xFFEC4899),
+                            onChanged: (value) {
+                              setDialogState(() {
+                                acceptedTerms = value ?? false;
+                              });
+                            },
+                            title: GestureDetector(
+                              onTap: () => _showTermsDialog(context),
+                              child: const Text.rich(
+                                TextSpan(
+                                  text: 'I agree to the ',
+                                  style: TextStyle(fontSize: 13),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Terms of Service',
+                                      style: TextStyle(
+                                        color: Color(0xFFEC4899),
+                                        decoration: TextDecoration.underline,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: acceptedPrivacy,
+                            activeColor: const Color(0xFFEC4899),
+                            onChanged: (value) {
+                              setDialogState(() {
+                                acceptedPrivacy = value ?? false;
+                              });
+                            },
+                            title: GestureDetector(
+                              onTap: () => _showPrivacyDialog(context),
+                              child: const Text.rich(
+                                TextSpan(
+                                  text: 'I agree to the ',
+                                  style: TextStyle(fontSize: 13),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Privacy Policy',
+                                      style: TextStyle(
+                                        color: Color(0xFFEC4899),
+                                        decoration: TextDecoration.underline,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text(
+                    'Decline',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: (acceptedTerms && acceptedPrivacy)
+                      ? () => Navigator.of(dialogContext).pop(true)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEC4899),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[300],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Accept & Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    
+    return result ?? false;
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -667,6 +818,27 @@ class _LoginPageState extends State<LoginPage> {
           const SnackBar(content: Text('Google sign-in cancelled.')),
         );
         return;
+      }
+
+      // Check if this is a new user
+      final isNewUser = result.userCredential.additionalUserInfo?.isNewUser ?? false;
+      
+      if (isNewUser) {
+        // Show terms and conditions for new users
+        if (!mounted) return;
+        final accepted = await _showTermsAcceptanceDialog();
+        
+        if (!accepted) {
+          // User declined terms, sign them out
+          await FirebaseAuth.instance.signOut();
+          if (!mounted) return;
+          appScaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('You must accept the terms to create an account.'),
+            ),
+          );
+          return;
+        }
       }
 
       await _handlePostSignIn(result.userCredential.user, source: 'google');
@@ -717,6 +889,28 @@ class _LoginPageState extends State<LoginPage> {
           final userCredential = await FirebaseAuth.instance
               .signInWithCredential(credential);
 
+          // Check if this is a new user
+          final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+          
+          if (isNewUser) {
+            // Show terms and conditions for new users
+            if (!mounted) return;
+            final accepted = await _showTermsAcceptanceDialog();
+            
+            if (!accepted) {
+              // User declined terms, sign them out
+              await FirebaseAuth.instance.signOut();
+              await FacebookAuth.instance.logOut();
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('You must accept the terms to create an account.'),
+                ),
+              );
+              break;
+            }
+          }
+
           await _handlePostSignIn(userCredential.user, source: 'facebook');
           break;
         case LoginStatus.cancelled:
@@ -759,68 +953,46 @@ class _LoginPageState extends State<LoginPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFDF3FA), Color(0xFFF7E7F4), Color(0xFFF0F4FF)],
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -140,
-              left: -80,
-              child: _decorCircle(260, const Color(0xFFD946A6)),
-            ),
-            Positioned(
-              bottom: -180,
-              right: -90,
-              child: _decorCircle(300, const Color(0xFF6366F1), opacity: 0.14),
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final maxWidth = constraints.maxWidth;
-                  final cardWidth = maxWidth > 520 ? 420.0 : maxWidth * 0.92;
+      backgroundColor: const Color(0xFFF5E6E8),
+      body: Align(
+        alignment: Alignment.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+            final cardWidth = maxWidth > 520 ? 420.0 : maxWidth * 0.92;
 
-                  final responsivePadding =
-                      responsive.ResponsiveHelper.getHorizontalPadding(context);
-                  final responsiveVertical =
-                      responsive.ResponsiveHelper.getVerticalPadding(context);
-                  final bottomPadding =
-                      MediaQuery.of(context).viewInsets.bottom +
-                      responsiveVertical;
+            final responsivePadding =
+                responsive.ResponsiveHelper.getHorizontalPadding(context);
+            final responsiveVertical =
+                responsive.ResponsiveHelper.getVerticalPadding(context);
+            final bottomPadding =
+                MediaQuery.of(context).viewInsets.bottom +
+                responsiveVertical;
 
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      left: responsivePadding,
-                      right: responsivePadding,
-                      top: responsiveVertical * 2,
-                      bottom: bottomPadding,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildBrandHeader(theme, cardWidth),
-                        SizedBox(
-                          height: responsive.ResponsiveHelper.getSpacing(
-                            context,
-                            small: 16,
-                            medium: 20,
-                            large: 24,
-                          ),
-                        ),
-                        _buildFormCard(context, theme, cardWidth),
-                      ],
-                    ),
-                  );
-                },
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: responsivePadding,
+                right: responsivePadding,
+                top: responsiveVertical * 2,
+                bottom: bottomPadding,
               ),
-            ),
-          ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBrandHeader(theme, cardWidth),
+                  SizedBox(
+                    height: responsive.ResponsiveHelper.getSpacing(
+                      context,
+                      small: 16,
+                      medium: 20,
+                      large: 24,
+                    ),
+                  ),
+                  _buildFormCard(context, theme, cardWidth),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -1046,6 +1218,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Checkbox(
                     value: _rememberMe,
@@ -1056,12 +1229,10 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Remember me',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: Colors.black87,
-                      ),
+                  Text(
+                    'Remember me',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.black87,
                     ),
                   ),
                 ],

@@ -1,7 +1,11 @@
 class CalendarDay {
   final int day;
   final bool isPeriodDay;
+  final bool isFollicular;
   final bool isFertileWindow;
+  final bool isLuteal;
+  final bool isMaybeFertile;
+  final bool isNotFertile;
   final bool isToday;
   final bool hasOvulation;
   final bool hasSymptomsLogged;
@@ -10,7 +14,11 @@ class CalendarDay {
   CalendarDay({
     required this.day,
     this.isPeriodDay = false,
+    this.isFollicular = false,
     this.isFertileWindow = false,
+    this.isLuteal = false,
+    this.isMaybeFertile = false,
+    this.isNotFertile = false,
     this.isToday = false,
     this.hasOvulation = false,
     this.hasSymptomsLogged = false,
@@ -27,7 +35,11 @@ class LegendItem {
 
 enum LegendType {
   periodDays,
+  follicular,
   fertileWindow,
+  luteal,
+  maybeFertile,
+  notFertile,
   today,
   ovulation,
   symptomsLogged,
@@ -89,26 +101,28 @@ class CalendarData {
     return result;
   }
 
-  static List<CalendarDay> getCalendarDays() {
+  static List<CalendarDay> getCalendarDays([DateTime? forMonth]) {
     // Generate empty calendar days - no cycle indicators by default
     final baseDays = <CalendarDay>[];
+    final month = forMonth ?? currentMonth;
     
-    // Get the number of days in the current month
-    final lastDayOfMonth = currentMonth.month == 12
-        ? DateTime(currentMonth.year + 1, 1, 0).day
-        : DateTime(currentMonth.year, currentMonth.month + 1, 0).day;
+    // Get the number of days in the specified month
+    final lastDayOfMonth = month.month == 12
+        ? DateTime(month.year + 1, 1, 0).day
+        : DateTime(month.year, month.month + 1, 0).day;
 
     for (int day = 1; day <= lastDayOfMonth; day++) {
       baseDays.add(CalendarDay(day: day));
     }
 
     return baseDays.map((day) {
-      final date = DateTime(currentMonth.year, currentMonth.month, day.day);
+      final date = DateTime(month.year, month.month, day.day);
       final hasSymptoms = hasSymptomsForDate(date);
       final hasNotes = hasNoteForDate(date);
-      final isToday = date.day == DateTime.now().day &&
-          date.month == DateTime.now().month &&
-          date.year == DateTime.now().year;
+      final now = DateTime.now();
+      final isToday = date.day == now.day &&
+          date.month == now.month &&
+          date.year == now.year;
 
       return CalendarDay(
         day: day.day,

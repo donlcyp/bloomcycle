@@ -109,12 +109,8 @@ class _InsightsPageState extends State<InsightsPage> {
     // Normalize DB cycles by filling missing lengths from user settings
     final defaults = UserState.currentUser.settings.cycleSettings;
     final List<Map<String, dynamic>> cyclesDb = _cyclesFromDb.map((c) {
-      final int cycleLen = (c['cycleLength'] ?? 0) is int
-          ? (c['cycleLength'] as int)
-          : int.tryParse('${c['cycleLength'] ?? ''}') ?? 0;
-      final int periodLen = (c['periodLength'] ?? 0) is int
-          ? (c['periodLength'] as int)
-          : int.tryParse('${c['periodLength'] ?? ''}') ?? 0;
+      final int cycleLen = _safeInt(c['cycleLength']);
+      final int periodLen = _safeInt(c['periodLength']);
       return {
         ...c,
         'cycleLength': cycleLen > 0 ? cycleLen : defaults.cycleLength,
@@ -124,10 +120,10 @@ class _InsightsPageState extends State<InsightsPage> {
     final List<CycleHistoryEntry> cyclesStatic = CycleHistoryData.recentCycles;
     final bool usingDb = cyclesDb.isNotEmpty;
     final avgCycle = usingDb
-        ? _avg(cyclesDb.map((c) => (c['cycleLength'] ?? 0) as int).toList())
+        ? _avg(cyclesDb.map((c) => _safeInt(c['cycleLength'])).toList())
         : CycleHistoryData.averageCycleLength;
     final avgPeriod = usingDb
-        ? _avg(cyclesDb.map((c) => (c['periodLength'] ?? 0) as int).toList())
+        ? _avg(cyclesDb.map((c) => _safeInt(c['periodLength'])).toList())
         : CycleHistoryData.averagePeriodLength;
     final cyclesCount = usingDb ? cyclesDb.length : cyclesStatic.length;
 
@@ -138,7 +134,7 @@ class _InsightsPageState extends State<InsightsPage> {
     int? maxCycle;
     if (usingDb && cyclesDb.isNotEmpty) {
       final lengths = cyclesDb
-          .map((c) => (c['cycleLength'] ?? 0) as int)
+          .map((c) => _safeInt(c['cycleLength']))
           .where((v) => v > 0)
           .toList();
       if (lengths.isNotEmpty) {
@@ -204,12 +200,14 @@ class _InsightsPageState extends State<InsightsPage> {
             ),
             Expanded(
               child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24.0,
                     vertical: 16.0,
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Personal snapshot (optional)
@@ -472,7 +470,7 @@ class _InsightsPageState extends State<InsightsPage> {
                                         ),
                                         child: Text(
                                           usingDb
-                                              ? '${(((cycle as Map<String, dynamic>)['cycleLength'] ?? 0) as int)} days'
+                                              ? '${_safeInt((cycle as Map<String, dynamic>)['cycleLength'])} days'
                                               : '${(cycle as CycleHistoryEntry).cycleLengthDays} days',
                                           style: const TextStyle(
                                             fontSize: 11,
@@ -485,7 +483,7 @@ class _InsightsPageState extends State<InsightsPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     usingDb
-                                        ? 'Cycle length: ${(((cycle as Map<String, dynamic>)['cycleLength'] ?? 0) as int)} days'
+                                        ? 'Cycle length: ${_safeInt((cycle as Map<String, dynamic>)['cycleLength'])} days'
                                         : 'Cycle length: ${(cycle as CycleHistoryEntry).cycleLengthDays} days',
                                     style: const TextStyle(
                                       fontSize: 13,
@@ -592,6 +590,14 @@ class _InsightsPageState extends State<InsightsPage> {
         ),
       ),
     );
+  }
+
+  int _safeInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   int _avg(List<int> values) {

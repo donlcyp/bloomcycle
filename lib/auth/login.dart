@@ -141,6 +141,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         bool isSending = false;
+        String? emailError;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -189,7 +190,9 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: controller,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: _inputDecoration('Email address'),
+                      decoration: _inputDecoration(
+                        'Email address',
+                      ).copyWith(errorText: emailError),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -200,14 +203,20 @@ class _LoginPageState extends State<LoginPage> {
                             ? null
                             : () async {
                                 final email = controller.text.trim();
+                                setModalState(() {
+                                  emailError = null;
+                                });
                                 if (email.isEmpty) {
-                                  ScaffoldMessenger.of(
-                                    parentContext,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please enter your email.'),
-                                    ),
-                                  );
+                                  setModalState(() {
+                                    emailError = 'Email is required.';
+                                  });
+                                  return;
+                                }
+
+                                if (!_isValidEmail(email)) {
+                                  setModalState(() {
+                                    emailError = 'Enter a valid email address.';
+                                  });
                                   return;
                                 }
 
@@ -223,11 +232,14 @@ class _LoginPageState extends State<LoginPage> {
                                   Navigator.of(sheetContext).pop();
 
                                   if (!parentContext.mounted) return;
-                                  Future.microtask(() {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
                                     if (!parentContext.mounted) return;
-                                    ScaffoldMessenger.of(
+                                    final messenger = ScaffoldMessenger.maybeOf(
                                       parentContext,
-                                    ).showSnackBar(
+                                    );
+                                    messenger?.showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           'Password reset link sent to $email',
@@ -236,18 +248,30 @@ class _LoginPageState extends State<LoginPage> {
                                     );
                                   });
                                 } on FirebaseAuthException catch (e) {
-                                  final message = e.code == 'user-not-found'
-                                      ? 'No account found with that email.'
-                                      : e.message ??
-                                            'Failed to send reset email.';
-                                  if (!parentContext.mounted) return;
-                                  ScaffoldMessenger.of(
-                                    parentContext,
-                                  ).showSnackBar(
-                                    SnackBar(content: Text(message)),
-                                  );
+                                  final code = e.code;
+                                  final message = switch (code) {
+                                    'user-not-found' =>
+                                      'No account found with that email.',
+                                    'invalid-email' => 'Invalid email address.',
+                                    'user-disabled' =>
+                                      'This account has been disabled.',
+                                    'operation-not-allowed' =>
+                                      'Password reset is not enabled for this project.',
+                                    'too-many-requests' =>
+                                      'Too many requests. Please try again later.',
+                                    'network-request-failed' =>
+                                      'Network error. Check your connection and try again.',
+                                    _ =>
+                                      e.message ??
+                                          'Failed to send reset email.',
+                                  };
+                                  if (sheetContext.mounted) {
+                                    setModalState(() {
+                                      emailError = message;
+                                    });
+                                  }
                                 } finally {
-                                  if (context.mounted) {
+                                  if (sheetContext.mounted) {
                                     setModalState(() {
                                       isSending = false;
                                     });
@@ -653,7 +677,7 @@ class _LoginPageState extends State<LoginPage> {
       builder: (dialogContext) {
         bool acceptedTerms = false;
         bool acceptedPrivacy = false;
-        
+
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -793,7 +817,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       },
     );
-    
+
     return result ?? false;
   }
 
@@ -821,13 +845,14 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       // Check if this is a new user
-      final isNewUser = result.userCredential.additionalUserInfo?.isNewUser ?? false;
-      
+      final isNewUser =
+          result.userCredential.additionalUserInfo?.isNewUser ?? false;
+
       if (isNewUser) {
         // Show terms and conditions for new users
         if (!mounted) return;
         final accepted = await _showTermsAcceptanceDialog();
-        
+
         if (!accepted) {
           // User declined terms, sign them out
           await FirebaseAuth.instance.signOut();
@@ -890,13 +915,14 @@ class _LoginPageState extends State<LoginPage> {
               .signInWithCredential(credential);
 
           // Check if this is a new user
-          final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
-          
+          final isNewUser =
+              userCredential.additionalUserInfo?.isNewUser ?? false;
+
           if (isNewUser) {
             // Show terms and conditions for new users
             if (!mounted) return;
             final accepted = await _showTermsAcceptanceDialog();
-            
+
             if (!accepted) {
               // User declined terms, sign them out
               await FirebaseAuth.instance.signOut();
@@ -904,7 +930,9 @@ class _LoginPageState extends State<LoginPage> {
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('You must accept the terms to create an account.'),
+                  content: Text(
+                    'You must accept the terms to create an account.',
+                  ),
                 ),
               );
               break;
@@ -966,8 +994,7 @@ class _LoginPageState extends State<LoginPage> {
             final responsiveVertical =
                 responsive.ResponsiveHelper.getVerticalPadding(context);
             final bottomPadding =
-                MediaQuery.of(context).viewInsets.bottom +
-                responsiveVertical;
+                MediaQuery.of(context).viewInsets.bottom + responsiveVertical;
 
             return SingleChildScrollView(
               padding: EdgeInsets.only(

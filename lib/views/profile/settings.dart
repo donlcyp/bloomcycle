@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../state/user_state.dart';
 import '../../services/firebase_service.dart';
+import '../../services/language_service.dart';
 import '../../models/settings_model.dart';
+import '../../theme/design_system.dart';
 import '../settings/notifications_settings.dart';
 import '../health/health_goals.dart';
 
@@ -34,6 +36,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _selectedTimeZone = s.appPreferences.timeZone;
     _cycleLength = s.cycleSettings.cycleLength;
     _periodLength = s.cycleSettings.periodLength;
+
+    LanguageService.setLanguageName(_selectedLanguage);
   }
 
   Future<void> _persistSettings(SettingsModel updated) async {
@@ -71,7 +75,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -117,19 +121,19 @@ class _SettingsPageState extends State<SettingsPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD946A6).withValues(alpha: 0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.tune, size: 16, color: Color(0xFFD946A6)),
+                    Icon(Icons.tune, size: 16, color: AppColors.primary),
                     SizedBox(width: 4),
                     Text(
                       'Advanced',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFD946A6),
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
@@ -312,6 +316,9 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() {
             _selectedLanguage = value!;
           });
+
+          LanguageService.setLanguageName(_selectedLanguage);
+
           final updated = UserState.currentUser.settings.copyWith(
             appPreferences: UserState.currentUser.settings.appPreferences
                 .copyWith(language: _selectedLanguage),
@@ -357,13 +364,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -371,8 +381,8 @@ class _SettingsPageState extends State<SettingsPage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: const Color(0xFFD946A6),
-            activeTrackColor: const Color(0xFFD946A6).withValues(alpha: 0.3),
+            activeThumbColor: AppColors.primary,
+            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
             inactiveThumbColor: Colors.grey[400],
             inactiveTrackColor: Colors.grey[300],
           ),
@@ -395,7 +405,7 @@ class _SettingsPageState extends State<SettingsPage> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -412,7 +422,10 @@ class _SettingsPageState extends State<SettingsPage> {
               value: selectedValue,
               onChanged: onChanged,
               icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
               items: options.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
@@ -474,7 +487,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD946A6).withValues(alpha: 0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -482,7 +495,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFD946A6),
+                    color: AppColors.primary,
                   ),
                 ),
               ),
@@ -494,7 +507,7 @@ class _SettingsPageState extends State<SettingsPage> {
             min: min,
             max: max,
             divisions: (max - min).toInt(),
-            activeColor: const Color(0xFFD946A6),
+            activeColor: AppColors.primary,
             inactiveColor: Colors.grey[300],
             onChanged: onChanged,
           ),
@@ -524,10 +537,10 @@ class _SettingsPageState extends State<SettingsPage> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFFD946A6).withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFFD946A6), size: 24),
+              child: Icon(icon, color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -539,13 +552,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ],
               ),

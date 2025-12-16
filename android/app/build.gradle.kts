@@ -44,7 +44,7 @@ android {
     // Specify CMake version compatible with newer NDK
     externalNativeBuild {
         cmake {
-            version = "4.1.2"
+            version = "3.22.1"
         }
     }
 }

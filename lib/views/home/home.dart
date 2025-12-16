@@ -149,8 +149,6 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(height: verticalSpacing),
                 _buildTodaysTip(theme, media),
                 SizedBox(height: verticalSpacing),
-                _buildHealthTips(theme, media),
-                SizedBox(height: verticalSpacing),
               ],
             ),
           ),
@@ -909,102 +907,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHealthTips(ThemeData theme, MediaQueryData media) {
-    return _surfaceCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Health Tips',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...HomeData.healthTips.map((tip) {
-            final int? mapped = HomeData.healthTipColors[tip.category];
-            final Color color = mapped != null
-                ? Color(mapped)
-                : AppColors.primary;
-            final iconName =
-                HomeData.healthTipIcons[tip.category] ?? 'favorite';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildHealthTipCard(
-                theme,
-                tip.title,
-                tip.description,
-                _getIconData(iconName),
-                color.withValues(alpha: 0.12),
-                color,
-              ),
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHealthTipCard(
-    ThemeData theme,
-    String title,
-    String description,
-    IconData icon,
-    Color backgroundColor,
-    Color iconColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconColor,
-              shape: BoxShape.circle,
-              boxShadow: AppShadows.soft(
-                color: iconColor.withValues(alpha: 0.30),
-                blur: 18,
-              ),
-            ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textMuted,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

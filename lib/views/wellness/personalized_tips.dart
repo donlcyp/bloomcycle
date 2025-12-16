@@ -65,7 +65,6 @@ class _PersonalizedTipsPageState extends State<PersonalizedTipsPage> {
           bottom: ResponsiveHelper.getVerticalPadding(context) + 16,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildPhaseSelector(),
@@ -264,7 +263,7 @@ class _PersonalizedTipsPageState extends State<PersonalizedTipsPage> {
             ),
             child: _buildTipCard(entry.key, entry.value),
           );
-        }).toList(),
+        }),
       ],
     );
   }

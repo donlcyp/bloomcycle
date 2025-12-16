@@ -5,14 +5,6 @@ import '../../services/firebase_service.dart';
 import '../../theme/design_system.dart';
 import '../../theme/responsive_helper.dart';
 
-int _safeInt(dynamic value, [int defaultValue = 0]) {
-  if (value == null) return defaultValue;
-  if (value is int) return value;
-  if (value is double) return value.toInt();
-  if (value is String) return int.tryParse(value) ?? defaultValue;
-  return defaultValue;
-}
-
 class CycleInsightsPage extends StatefulWidget {
   const CycleInsightsPage({super.key});
 
@@ -54,13 +46,13 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
     final totalCycles = cycles.length;
     final avgLength = totalCycles > 0
         ? cycles
-                  .map((c) => _safeInt(c['cycleLength'], 28))
+                  .map((c) => (c['cycleLength'] as int?) ?? 28)
                   .reduce((a, b) => a + b) /
               totalCycles
         : 28.0;
 
     final cycleLengths = cycles
-        .map((c) => _safeInt(c['cycleLength'], 28))
+        .map((c) => (c['cycleLength'] as int?) ?? 28)
         .toList();
     final regularity = _calculateRegularity(cycleLengths);
 
@@ -88,12 +80,12 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
       topSymptoms: topSymptoms,
       moodPatterns: moodPatterns,
       patterns: patterns,
-      currentPhase: phaseInfo['phase'] as String? ?? 'Unknown',
-      daysIntoPhase: _safeInt(phaseInfo['daysInto']),
+      currentPhase: phaseInfo['phase'] as String,
+      daysIntoPhase: phaseInfo['daysInto'] as int,
       nextPeriodDate: nextPeriod,
       predictionConfidence: regularity,
-      fertilityWindowStart: fertilityWindow['start'] as DateTime?,
-      fertilityWindowEnd: fertilityWindow['end'] as DateTime?,
+      fertilityWindowStart: fertilityWindow['start'],
+      fertilityWindowEnd: fertilityWindow['end'],
     );
   }
 
@@ -194,7 +186,7 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
     final moodMap = <String, List<int>>{};
     for (final mood in moods) {
       final moodName = mood['mood'] as String? ?? 'Unknown';
-      final intensity = _safeInt(mood['intensity'], 3);
+      final intensity = (mood['intensity'] as int?) ?? 3;
       moodMap.putIfAbsent(moodName, () => []).add(intensity);
     }
 
@@ -231,7 +223,7 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
 
     if (cycles.isNotEmpty && cycles.length > 2) {
       final lengths = cycles
-          .map((c) => _safeInt(c['cycleLength'], 28))
+          .map((c) => (c['cycleLength'] as int?) ?? 28)
           .toList();
       final isRegular = _calculateRegularity(lengths) > 0.8;
       patterns.add(
@@ -300,7 +292,6 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
               bottom: padding + 16,
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildCyclePhaseIndicator(stats, theme, media),
@@ -825,7 +816,7 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -914,7 +905,7 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -1012,7 +1003,7 @@ class _CycleInsightsPageState extends State<CycleInsightsPage> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );

@@ -177,7 +177,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildSurveyCard(survey),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -334,7 +334,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildChallengeCard(challenge),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
